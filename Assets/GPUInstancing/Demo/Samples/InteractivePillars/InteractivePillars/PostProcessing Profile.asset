@@ -21,10 +21,10 @@ MonoBehaviour:
     m_Value: 0.9
   intensity:
     m_OverrideState: 1
-    m_Value: 0.2
+    m_Value: 10
   scatter:
     m_OverrideState: 1
-    m_Value: 0.7
+    m_Value: 0.197
   clamp:
     m_OverrideState: 1
     m_Value: 65472
@@ -97,13 +97,13 @@ MonoBehaviour:
     m_Value: 1
   gaussianStart:
     m_OverrideState: 1
-    m_Value: 10
+    m_Value: 100
   gaussianEnd:
     m_OverrideState: 1
     m_Value: 200
   gaussianMaxRadius:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.5
   highQualitySampling:
     m_OverrideState: 1
     m_Value: 0
