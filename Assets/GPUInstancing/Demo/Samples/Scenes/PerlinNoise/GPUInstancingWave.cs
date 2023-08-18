@@ -6,7 +6,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace GPUInstancing
+namespace GPUInstancing.Samples
 {
 
     public class GPUInstancingWave : InstanceSpawningManager
