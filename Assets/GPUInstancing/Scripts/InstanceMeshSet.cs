@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace GPUInstancing
 {
-    [CreateAssetMenu(fileName = "InstanceSet", menuName = "Laio/Instance Set")]
+    [CreateAssetMenu(fileName = "InstanceMeshSet", menuName = "Laio/Instance Mesh Set")]
     public class InstanceMeshSet : ScriptableObject
     {
         [SerializeField] private InstanceMesh[] _meshes;

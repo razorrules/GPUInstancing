@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace GPUInstancing.Samples
 {
-    public class GPUInstancingPillars : InstanceSpawningManager
+    public class GPUInstancingPillars : InstanceManager
     {
         [Header("Construct settings")]
         public float gridOffset;
@@ -60,11 +60,7 @@ namespace GPUInstancing.Samples
 
                 _doRender[i] = false;
                 _positions[i] = new float3(x * gridOffset, 0, -y * gridOffset);
-
-                for (int lod = 0; lod < MeshesCount; lod++)
-                {
-                    _matrixData[(lod * AvailableInstances) + i] = Matrix4x4.TRS(_positions[i], Quaternion.Euler(rotation), Meshes[lod].scale);
-                }
+                _matrixData[i] = Matrix4x4.TRS(_positions[i], Quaternion.Euler(rotation), Vector3.one);
 
                 y++;
             }

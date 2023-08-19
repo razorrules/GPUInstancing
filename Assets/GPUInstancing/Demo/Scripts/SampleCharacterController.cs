@@ -58,6 +58,11 @@ namespace GPUInstancing.Samples
 
             movement = _camera.TransformDirection(movement);
 
+            if (Input.GetKeyDown(KeyCode.LeftShift))
+                moveSpeed *= 2;
+            if (Input.GetKeyUp(KeyCode.LeftShift))
+                moveSpeed /= 2;
+
             if (!_cc.isGrounded)
                 movement += Physics.gravity;
 

@@ -9,22 +9,21 @@ using UnityEngine;
 namespace GPUInstancing.Samples
 {
 
-    public class GPUInstancingWave : InstanceSpawningManager
+    /// <summary>
+    /// Lays out meshes in a grid and applies perlin noise to it
+    /// </summary>
+    public class GPUInstancingPerlinNoise : InstanceManager
     {
         [Header("Settings")]
         public float scale = 8.0f;
         public float heightScale = 5.0f;
         public float timeScale = 2.0f;
+        public float yScale;
 
-        protected override void Deallocate()
+        private void OnValidate()
         {
-            base.Deallocate();
-        }
-
-        protected override void Setup()
-        {
-            base.Setup();
-            int sqr = (int)Mathf.Sqrt(AvailableInstances);
+            if (yScale < 0)
+                yScale = 0;
         }
 
         public override void Allocate(int instancesCount)
@@ -51,11 +50,7 @@ namespace GPUInstancing.Samples
 
                 _doRender[i] = false;
                 _positions[i] = new float3(x, 0, -y);
-
-                for (int lod = 0; lod < MeshesCount; lod++)
-                {
-                    _matrixData[(lod * AvailableInstances) + i] = Matrix4x4.TRS(_positions[i], Quaternion.identity, Meshes[lod].scale);
-                }
+                _matrixData[i] = Matrix4x4.TRS(_positions[i], Quaternion.identity, Vector3.one);
 
                 y++;
             }
@@ -65,12 +60,14 @@ namespace GPUInstancing.Samples
         {
             base.PreRender(false);
 
+            //Schedule the update position matrix
             UpdatePositionsJob updatePositionsJob = new UpdatePositionsJob();
             updatePositionsJob.matrix = _matrixData;
             updatePositionsJob.time = Time.time;
             updatePositionsJob.divFactor = scale;
             updatePositionsJob.timeFactor = timeScale;
             updatePositionsJob.heightScale = heightScale;
+            updatePositionsJob.yScale = yScale;
 
             JobHandle updatePositionsHandle = updatePositionsJob.Schedule(_matrixData.Length, 16);
             updatePositionsHandle.Complete();
@@ -87,20 +84,30 @@ namespace GPUInstancing.Samples
             public float divFactor;
             public float time;
             public float heightScale;
+            public float yScale;
 
             public void Execute(int index)
             {
+                //Store reference to matrix
                 Matrix4x4 temp = matrix[index];
 
-                Vector4 pos = new Vector4(temp.GetPosition().x, 0, temp.GetPosition().z, 1);
+                //Set the Y position
+                temp.m13 = Mathf.PerlinNoise(
+                    (temp.GetPosition().x + (time * timeFactor)) / divFactor, // X
+                    (temp.GetPosition().z + (time * timeFactor)) / divFactor) // Y
+                    * heightScale; // Height multiplier
 
-                pos.y = Mathf.PerlinNoise((temp.GetPosition().x + (time * timeFactor)) / divFactor,
-                    (temp.GetPosition().z + (time * timeFactor)) / divFactor) * heightScale;
+                //Set the Y scale, if 0 then default to 1
+                if (yScale != 0)
+                    temp.m11 = yScale; // Y
+                else
+                    temp.m11 = 1;
 
-                temp.SetColumn(3, pos);
+                //Update matrix
                 matrix[index] = temp;
 
             }
+
         }
 
     }

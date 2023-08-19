@@ -21,7 +21,7 @@ namespace GPUInstancing
     /// 
     /// If you override OnDestroy, ensure that you deallocate everything.
     /// </summary>
-    public class InstanceSpawningManager : MonoBehaviour
+    public class MultiInstanceManager : MonoBehaviour
     {
         //TODO: Handle culling if it is incredibly close
         //TODO: Investigate why CPU time is high, probably some easy optimization that can be done.
@@ -71,6 +71,7 @@ namespace GPUInstancing
         public bool IsSetup { get; private set; } = false;
         public int MeshesCount { get => Meshes.Length; }
         public InstanceMesh[] Meshes { get; protected set; }
+        public float[] RenderDistance;
 
         private void Awake()
         {
@@ -105,7 +106,7 @@ namespace GPUInstancing
             if (_renderDistance == null || Meshes == null)
                 return;
             for (int i = 0; i < MeshesCount; i++)
-                _renderDistance[i] = Meshes[i].renderDistance;
+                _renderDistance[i] = RenderDistance[i];
         }
 
         private void Update()
@@ -175,7 +176,7 @@ namespace GPUInstancing
             //Setup the render distance into an array so we can pass it to jobs
             _renderDistance = new NativeArray<float>(MeshesCount, Allocator.Persistent);
             for (int i = 0; i < MeshesCount; i++)
-                _renderDistance[i] = Meshes[i].renderDistance;
+                _renderDistance[i] = RenderDistance[i];
 
             AvailableInstances = instancesCount;
 
