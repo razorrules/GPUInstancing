@@ -21,7 +21,7 @@ namespace GPUInstancing
     /// 
     /// If you override OnDestroy, ensure that you deallocate everything.
     /// </summary>
-    public class MultiInstanceManager : MonoBehaviour
+    public class PoolInstanceManager : MonoBehaviour
     {
         //TODO: Handle culling if it is incredibly close
         //TODO: Investigate why CPU time is high, probably some easy optimization that can be done.
@@ -41,10 +41,6 @@ namespace GPUInstancing
         [NativeDisableParallelForRestriction]
         protected NativeArray<float3> _scale;
 
-        /// <summary> Byte for the LOD group a given position belongs too. </summary>
-        [NativeDisableParallelForRestriction]
-        protected NativeArray<byte> _lodGroup;
-
         /// <summary> Data related to all matrix's for all positions and LODS</summary>
         [NativeDisableParallelForRestriction]
         protected NativeArray<Matrix4x4> _matrixData;
@@ -53,7 +49,11 @@ namespace GPUInstancing
         [NativeDisableParallelForRestriction]
         protected NativeArray<int> _matrixLength;
 
-        private RenderParams[] RenderParams;
+        /// <summary> Length of the array for a given LOD </summary>
+        [NativeDisableParallelForRestriction]
+        protected NativeArray<bool> _doRender;
+
+        private RenderParams RenderParams;
 
 #if UNITY_EDITOR
         private Stopwatch _prerenderTimer;
@@ -64,8 +64,7 @@ namespace GPUInstancing
         public long CpuTimeMilliseconds { get; private set; } = 0;
         public float AllocatedKB { get; protected set; } = 0;
         public bool IsSetup { get; private set; } = false;
-        public int MeshesCount { get => Meshes.Length; }
-        public InstanceMesh[] Meshes { get; protected set; }
+        public InstanceMesh Mesh { get; protected set; }
 
         private void Awake()
         {
@@ -85,11 +84,9 @@ namespace GPUInstancing
         protected virtual void Deallocate()
         {
             _positions.Dispose();
-            _rotations.Dispose();
-            _scale.Dispose();
-            _lodGroup.Dispose();
             _matrixData.Dispose();
             _matrixLength.Dispose();
+            _doRender.Dispose();
         }
 
         private void Update()
@@ -119,7 +116,7 @@ namespace GPUInstancing
                 else
                     Debug.LogWarning("<color=orange>No camera set for InstancingSpawningManager. Set do default camera: " + _camera.name + "</color>");
             }
-            Meshes = _meshSet.Meshes;
+            Mesh = _meshSet.Meshes[0];
 
 #if UNITY_EDITOR
             _prerenderTimer = new Stopwatch();
@@ -136,22 +133,18 @@ namespace GPUInstancing
         public virtual void Allocate(int instancesCount)
         {
             Setup();
-            if (Meshes == null || Meshes.Length == 0)
+            if (Mesh == null)
             {
                 Debug.Log("InstanceSpawningManager cannot allocate and setup without meshes.");
                 return;
             }
 
-            RenderParams = new RenderParams[MeshesCount];
+            RenderParams = new RenderParams(Mesh.material);
+            RenderParams.layer = Mesh.layer;
+            RenderParams.shadowCastingMode = Mesh.shadowCastingMode;
+            RenderParams.receiveShadows = Mesh.receiveShadows;
+            RenderParams.camera = _camera;
 
-            for (int i = 0; i < RenderParams.Length; i++)
-            {
-                RenderParams[i] = new RenderParams(Meshes[i].material);
-                RenderParams[i].layer = Meshes[i].layer;
-                RenderParams[i].shadowCastingMode = Meshes[i].shadowCastingMode;
-                RenderParams[i].receiveShadows = Meshes[i].receiveShadows;
-                RenderParams[i].camera = _camera;
-            }
 
             AvailableInstances = instancesCount;
 
@@ -175,17 +168,13 @@ namespace GPUInstancing
             _scale = new NativeArray<float3>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += float3Size * AvailableInstances;
 
-            //Allocate LOD groups
-            _lodGroup = new NativeArray<byte>(AvailableInstances, Allocator.Persistent);
-            AllocatedKB += (sizeof(byte) * AvailableInstances);
-
             //Allocate matrix data
-            _matrixData = new NativeArray<Matrix4x4>(AvailableInstances * MeshesCount, Allocator.Persistent);
-            AllocatedKB += (matrixSize * AvailableInstances) * MeshesCount;
+            _matrixData = new NativeArray<Matrix4x4>(AvailableInstances, Allocator.Persistent);
+            AllocatedKB += (matrixSize * AvailableInstances);
 
             //Allocate matrix length
-            _matrixLength = new NativeArray<int>(MeshesCount, Allocator.Persistent);
-            AllocatedKB += sizeof(int) * MeshesCount;
+            _matrixLength = new NativeArray<int>(1, Allocator.Persistent);
+            AllocatedKB += sizeof(int);
 
             AllocatedKB /= 1024;
             Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
@@ -201,7 +190,6 @@ namespace GPUInstancing
 
             UpdateMatrixJob updateMatrix = new UpdateMatrixJob()
             {
-                lodGroups = _lodGroup,
                 matrixLengths = _matrixLength,
                 matrixData = _matrixData,
                 positions = _positions,
@@ -229,24 +217,18 @@ namespace GPUInstancing
 
         protected virtual void Render()
         {
-            for (int i = 0; i < MeshesCount; i++)
-            {
-                if (_matrixLength[i] == 0)
-                    continue;
-
-                Graphics.RenderMeshInstanced(RenderParams[i],
-                    Meshes[i].mesh,
-                    Meshes[i].submeshIndex,
-                    _matrixData.GetSubArray(i * AvailableInstances, _matrixLength[i])
-                    );
-            }
+            if (_matrixLength[0] == 0)
+                return;
+            Graphics.RenderMeshInstanced(RenderParams,
+                Mesh.mesh,
+                Mesh.submeshIndex,
+                _matrixData.GetSubArray(0, _matrixLength[0])
+                );
         }
 
         [BurstCompile]
         protected struct UpdateMatrixJob : IJob
         {
-            public NativeArray<byte> lodGroups;
-
             public NativeArray<int> matrixLengths;
             public NativeArray<Matrix4x4> matrixData;
 
@@ -265,9 +247,9 @@ namespace GPUInstancing
 
                 for (int i = 0; i < positions.Length; i++)
                 {
-                    matrixData[positions.Length * lodGroups[i] + matrixLengths[lodGroups[i]]] = Matrix4x4.TRS(positions[i], rotations[i], scales[i]);
+                    matrixData[matrixLengths[0]] = Matrix4x4.TRS(positions[i], rotations[i], scales[i]);
 
-                    matrixLengths[lodGroups[i]]++;
+                    matrixLengths[0]++;
                 }
             }
         }

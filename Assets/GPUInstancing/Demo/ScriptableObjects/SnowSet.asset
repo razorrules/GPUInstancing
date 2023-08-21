@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 996c1dcea63da1c42b6c6a61c5f5a84c, type: 3}
-  m_Name: CubeMeshSet
+  m_Name: SnowSet
   m_EditorClassIdentifier: 
   _meshes:
   - renderDistance: 0
-    mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-    material: {fileID: 2100000, guid: d512fe1dc32d7b5449c85a4a121d92c2, type: 2}
-    submeshIndex: 1
+    mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: 1c3cb11736423b2428dc24b7df65ba92, type: 2}
+    submeshIndex: 0
     layer: 0
     shadowCastingMode: 1
     receiveShadows: 0

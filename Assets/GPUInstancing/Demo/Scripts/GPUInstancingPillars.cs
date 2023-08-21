@@ -58,9 +58,10 @@ namespace GPUInstancing.Samples
                     y = 0;
                 }
 
-                _doRender[i] = false;
-                _positions[i] = new float3(x * gridOffset, 0, -y * gridOffset);
-                _matrixData[i] = Matrix4x4.TRS(_positions[i], Quaternion.Euler(rotation), Vector3.one);
+                _matrixData[i] = Matrix4x4.TRS(
+                    new float3(x * gridOffset, 0, -y * gridOffset),
+                    Quaternion.Euler(rotation),
+                    Vector3.one);
 
                 y++;
             }
@@ -77,7 +78,7 @@ namespace GPUInstancing.Samples
             updatePositionsJob.timeFactor = timeScale;
             updatePositionsJob.heightScale = heightScale;
 
-            updatePositionsJob.playerPos = player.position;
+            updatePositionsJob.playerPos = new float2(player.position.x, player.position.z);
             updatePositionsJob.minDist = minDist;
             updatePositionsJob.maxDist = maxDist;
             updatePositionsJob.height = height;
@@ -100,7 +101,7 @@ namespace GPUInstancing.Samples
             [ReadOnly] public float heightScale;
 
             //Interation settings
-            [ReadOnly] public float3 playerPos;
+            [ReadOnly] public float2 playerPos;
             [ReadOnly] public float minDist;
             [ReadOnly] public float maxDist;
             [ReadOnly] public float height;
@@ -111,7 +112,8 @@ namespace GPUInstancing.Samples
 
                 Vector4 pos = new Vector4(temp.GetPosition().x, 0, temp.GetPosition().z, 1);
 
-                float dist = math.distance(temp.GetPosition(), playerPos);
+                float dist = math.distance(
+                    new float2(temp.GetPosition().x, temp.GetPosition().z), playerPos);
 
                 float blend = 1 - GetBlend(dist, minDist, maxDist);
 

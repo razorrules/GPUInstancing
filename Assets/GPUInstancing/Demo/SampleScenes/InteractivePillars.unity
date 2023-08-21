@@ -135,7 +135,7 @@ GameObject:
   - component: {fileID: 1259707331}
   - component: {fileID: 1259707332}
   m_Layer: 0
-  m_Name: GPUInstancing
+  m_Name: PillarInstancing
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -176,8 +176,8 @@ MonoBehaviour:
   gridOffset: 3
   rotation: {x: -90, y: 0, z: 0}
   player: {fileID: 4635773162539382291}
-  minDist: 16
-  maxDist: 20
+  minDist: 4
+  maxDist: 10
   height: 13
   scale: 40
   heightScale: 10

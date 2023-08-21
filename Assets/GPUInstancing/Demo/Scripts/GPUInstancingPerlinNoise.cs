@@ -48,9 +48,10 @@ namespace GPUInstancing.Samples
                     y = 0;
                 }
 
-                _doRender[i] = false;
-                _positions[i] = new float3(x, 0, -y);
-                _matrixData[i] = Matrix4x4.TRS(_positions[i], Quaternion.identity, Vector3.one);
+                _matrixData[i] = Matrix4x4.TRS(
+                    new float3(x, 0, -y),
+                    Quaternion.identity,
+                    Vector3.one);
 
                 y++;
             }

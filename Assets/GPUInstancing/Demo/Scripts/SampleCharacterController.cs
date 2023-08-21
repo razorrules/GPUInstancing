@@ -54,9 +54,11 @@ namespace GPUInstancing.Samples
             Vector3 movement = new Vector3(
                 Input.GetAxis("Horizontal"),
                 0,
-                Input.GetAxis("Vertical")).normalized;
+                Input.GetAxis("Vertical"));
 
             movement = _camera.TransformDirection(movement);
+            movement.y = 0;
+            movement = movement.normalized;
 
             if (Input.GetKeyDown(KeyCode.LeftShift))
                 moveSpeed *= 2;
