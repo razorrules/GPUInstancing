@@ -1,15 +1,20 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 
-[System.Serializable]
-public class InstanceMesh
+namespace GPUInstancing
 {
-    public float renderDistance;
-    public Mesh mesh;
-    public Material material;
-    public int submeshIndex = 1;
-    public int layer;
-    public ShadowCastingMode shadowCastingMode;
-    public bool receiveShadows;
+
+    [System.Serializable]
+    public class InstanceMesh
+    {
+        public float renderDistance;
+        public Mesh mesh;
+        public Material material;
+        public int submeshIndex = 1;
+        public int layer;
+        public ShadowCastingMode shadowCastingMode;
+        public bool receiveShadows;
+
+    }
 
 }
