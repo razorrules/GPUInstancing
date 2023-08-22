@@ -70,6 +70,8 @@ namespace GPUInstancing.Samples.VegetationPainter
             //Return if you are hovering over UI objects, as we don't want to paint while you click a button
             if (EventSystem.current.IsPointerOverGameObject())
                 return;
+
+
             //Add
             if (Input.GetMouseButton(0))
             {
@@ -84,12 +86,14 @@ namespace GPUInstancing.Samples.VegetationPainter
                         0,
                         UnityEngine.Random.Range(-brushSize, brushSize)));
                 }
+
                 Painter.AddPoints(generatedPoints);
             }
 
             //Remove points 
             if (Input.GetMouseButton(1))
             {
+                Debug.Log("Removing");
                 Painter.RemovePoints(position, brushSize);
             }
 

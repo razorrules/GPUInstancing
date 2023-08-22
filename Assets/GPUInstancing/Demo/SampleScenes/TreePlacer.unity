@@ -185,8 +185,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   manager: {fileID: 70945221}
-  defaultSize: {x: 0, y: 0, z: 0}
-  sizeVariation: 0
+  defaultSize: {x: 50, y: 50, z: 50}
+  sizeVariation: 50
 --- !u!1 &79214033
 GameObject:
   m_ObjectHideFlags: 0
@@ -1041,8 +1041,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   manager: {fileID: 788611256}
-  defaultSize: {x: 0, y: 0, z: 0}
-  sizeVariation: 0
+  defaultSize: {x: 50, y: 50, z: 50}
+  sizeVariation: 50
 --- !u!1 &939601112
 GameObject:
   m_ObjectHideFlags: 0
@@ -1288,8 +1288,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   manager: {fileID: 1073263893}
-  defaultSize: {x: 0, y: 0, z: 0}
-  sizeVariation: 0
+  defaultSize: {x: 50, y: 50, z: 50}
+  sizeVariation: 50
 --- !u!1 &1159258244
 GameObject:
   m_ObjectHideFlags: 0
