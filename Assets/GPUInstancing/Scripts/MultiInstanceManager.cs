@@ -21,17 +21,10 @@ namespace GPUInstancing
     /// 
     /// If you override OnDestroy, ensure that you deallocate everything.
     /// </summary>
-    public class MultiInstanceManager : MonoBehaviour
+    public class MultiInstanceManager : InstanceManagerBase
     {
-        //TODO: Handle culling if it is incredibly close
-        //TODO: Investigate why CPU time is high, probably some easy optimization that can be done.
-        public const float CAMERA_CULL_OFFSET_PIXELS = 100;
-
         [Header("Settings")]
-        [SerializeField] protected int numInstances = 100;
-        [SerializeField] protected bool constructInAwake = false;
         [SerializeField] private InstanceMeshSet _meshSet;
-        [SerializeField] protected Camera _camera;
 
         //List of all positions on the grid
         [NativeDisableParallelForRestriction]
@@ -43,7 +36,7 @@ namespace GPUInstancing
 
         /// <summary> Byte for the LOD group a given position belongs too. </summary>
         [NativeDisableParallelForRestriction]
-        protected NativeArray<byte> _lodGroup;
+        protected NativeArray<byte> _meshGroup;
 
         /// <summary> Data related to all matrix's for all positions and LODS</summary>
         [NativeDisableParallelForRestriction]
@@ -55,92 +48,28 @@ namespace GPUInstancing
 
         private RenderParams[] RenderParams;
 
-#if UNITY_EDITOR
-        private Stopwatch _prerenderTimer;
-#endif
-
         //========== Properties
-        public int AvailableInstances { get; private set; } = 0;
-        public long CpuTimeMilliseconds { get; private set; } = 0;
-        public float AllocatedKB { get; protected set; } = 0;
-        public bool IsSetup { get; private set; } = false;
         public int MeshesCount { get => Meshes.Length; }
         public InstanceMesh[] Meshes { get; protected set; }
-
-        private void Awake()
-        {
-            if (constructInAwake)
-                Allocate(numInstances);
-        }
-
-        private void OnDestroy()
-        {
-            //Dispose all of the arrays whenever object is destroy4ed
-            Deallocate();
-        }
 
         /// <summary>
         /// Deallocate all of the native arrays.
         /// </summary>
-        protected virtual void Deallocate()
+        protected override void Deallocate()
         {
             _positions.Dispose();
             _rotations.Dispose();
             _scale.Dispose();
-            _lodGroup.Dispose();
+            _meshGroup.Dispose();
             _matrixData.Dispose();
             _matrixLength.Dispose();
         }
 
-        private void Update()
+        public override void Setup(int instances)
         {
-            if (!IsSetup)
-                return;
+            base.Setup(instances);
 
-            //Do pre rendering calculations like culling.
-            PreRender();
-
-            //Actually render the meshes.
-            Render();
-        }
-
-        public void SetCamera(Camera camera)
-        {
-            _camera = camera;
-        }
-
-        protected virtual void Setup()
-        {
-            if (_camera == null)
-            {
-                _camera = FindObjectOfType<Camera>();
-                if (_camera == null)
-                    Debug.LogError("No camera set for InstanceSpawningManager and no camera found in scene to default to. Ensure a camera is setup.");
-                else
-                    Debug.LogWarning("<color=orange>No camera set for InstancingSpawningManager. Set do default camera: " + _camera.name + "</color>");
-            }
             Meshes = _meshSet.Meshes;
-
-#if UNITY_EDITOR
-            _prerenderTimer = new Stopwatch();
-#endif
-
-        }
-
-        public void Allocate(int instancesCount, Camera camera)
-        {
-            SetCamera(camera);
-            Allocate(instancesCount);
-        }
-
-        public virtual void Allocate(int instancesCount)
-        {
-            Setup();
-            if (Meshes == null || Meshes.Length == 0)
-            {
-                Debug.Log("InstanceSpawningManager cannot allocate and setup without meshes.");
-                return;
-            }
 
             RenderParams = new RenderParams[MeshesCount];
 
@@ -153,7 +82,11 @@ namespace GPUInstancing
                 RenderParams[i].camera = _camera;
             }
 
-            AvailableInstances = instancesCount;
+            Allocate();
+        }
+
+        protected override void Allocate()
+        {
 
             //Lets allocate all of the arrays, we will also track how much we allocated
             //Float 3 does not have a predefined size, but it contains 3 floats
@@ -176,7 +109,7 @@ namespace GPUInstancing
             AllocatedKB += float3Size * AvailableInstances;
 
             //Allocate LOD groups
-            _lodGroup = new NativeArray<byte>(AvailableInstances, Allocator.Persistent);
+            _meshGroup = new NativeArray<byte>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += (sizeof(byte) * AvailableInstances);
 
             //Allocate matrix data
@@ -193,15 +126,13 @@ namespace GPUInstancing
             IsSetup = true;
         }
 
-        protected virtual void PreRender(bool stopTimer = true)
+        protected override void PreRender(bool stopTimer = true)
         {
-#if UNITY_EDITOR
-            _prerenderTimer.Restart();
-#endif
+            base.PreRender(stopTimer);
 
             UpdateMatrixJob updateMatrix = new UpdateMatrixJob()
             {
-                lodGroups = _lodGroup,
+                lodGroups = _meshGroup,
                 matrixLengths = _matrixLength,
                 matrixData = _matrixData,
                 positions = _positions,
@@ -216,18 +147,7 @@ namespace GPUInstancing
                 FinishPreRender();
         }
 
-        protected void FinishPreRender()
-        {
-#if UNITY_EDITOR
-            _prerenderTimer.Stop();
-            CpuTimeMilliseconds = _prerenderTimer.ElapsedMilliseconds;
-
-            if (_prerenderTimer.ElapsedMilliseconds > 1)
-                Debug.Log("Took: " + _prerenderTimer.ElapsedMilliseconds + "ms in prerender.");
-#endif
-        }
-
-        protected virtual void Render()
+        protected override void Render()
         {
             for (int i = 0; i < MeshesCount; i++)
             {

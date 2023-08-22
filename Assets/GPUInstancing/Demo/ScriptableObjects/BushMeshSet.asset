@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 996c1dcea63da1c42b6c6a61c5f5a84c, type: 3}
+  m_Name: BushMeshSet
+  m_EditorClassIdentifier: 
+  _meshes:
+  - renderDistance: 0
+    mesh: {fileID: 5958362384829529401, guid: 6421290e2e28c4a41ac90a90a21e6746, type: 3}
+    material: {fileID: 2100000, guid: 5dbaddf973e926a469f06174fa9b3934, type: 2}
+    submeshIndex: 1
+    layer: 0
+    shadowCastingMode: 1
+    receiveShadows: 0

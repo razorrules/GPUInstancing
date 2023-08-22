@@ -6,11 +6,30 @@ using Unity.Burst;
 using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 using System;
+using System.Collections.Generic;
 
 //TODO: Create a pooling system
 
 namespace GPUInstancing
 {
+
+    public struct PoolInstanceData
+    {
+        public int index;
+        public Vector3 position;
+        public Quaternion rotation;
+        public Vector3 scale;
+        public bool doRender;
+
+        public static int GetSize()
+        {
+            return sizeof(int) + // Index
+                (sizeof(float) * 3) + //Position
+                (sizeof(float) * 4) + //Rotation
+                (sizeof(float) * 3) + //Scale
+                sizeof(bool); // doRender
+        }
+    }
 
     /// <summary>
     /// This class can handle spawning a mesh with various levels of LOD.
@@ -21,29 +40,18 @@ namespace GPUInstancing
     /// 
     /// If you override OnDestroy, ensure that you deallocate everything.
     /// </summary>
-    public class PoolInstanceManager : MonoBehaviour
+    public class PoolInstanceManager : InstanceManagerBase
     {
-        //TODO: Handle culling if it is incredibly close
-        //TODO: Investigate why CPU time is high, probably some easy optimization that can be done.
-        public const float CAMERA_CULL_OFFSET_PIXELS = 100;
-
         [Header("Settings")]
-        [SerializeField] protected int numInstances = 100;
-        [SerializeField] protected bool constructInAwake = false;
         [SerializeField] private InstanceMeshSet _meshSet;
-        [SerializeField] protected Camera _camera;
-
-        //List of all positions on the grid
-        [NativeDisableParallelForRestriction]
-        protected NativeArray<float3> _positions;
-        [NativeDisableParallelForRestriction]
-        protected NativeArray<Quaternion> _rotations;
-        [NativeDisableParallelForRestriction]
-        protected NativeArray<float3> _scale;
 
         /// <summary> Data related to all matrix's for all positions and LODS</summary>
         [NativeDisableParallelForRestriction]
         protected NativeArray<Matrix4x4> _matrixData;
+
+        /// <summary> Data related to all matrix's for all positions and LODS</summary>
+        [NativeDisableParallelForRestriction]
+        protected NativeArray<PoolInstanceData> _data;
 
         /// <summary> Length of the array for a given LOD </summary>
         [NativeDisableParallelForRestriction]
@@ -54,119 +62,55 @@ namespace GPUInstancing
         protected NativeArray<bool> _doRender;
 
         private RenderParams RenderParams;
+        private bool _doPrerender;
 
-#if UNITY_EDITOR
-        private Stopwatch _prerenderTimer;
-#endif
 
         //========== Properties
-        public int AvailableInstances { get; private set; } = 0;
-        public long CpuTimeMilliseconds { get; private set; } = 0;
-        public float AllocatedKB { get; protected set; } = 0;
-        public bool IsSetup { get; private set; } = false;
         public InstanceMesh Mesh { get; protected set; }
 
-        private void Awake()
-        {
-            if (constructInAwake)
-                Allocate(numInstances);
-        }
-
-        private void OnDestroy()
-        {
-            //Dispose all of the arrays whenever object is destroy4ed
-            Deallocate();
-        }
 
         /// <summary>
         /// Deallocate all of the native arrays.
         /// </summary>
-        protected virtual void Deallocate()
+        protected override void Deallocate()
         {
-            _positions.Dispose();
+            _data.Dispose();
             _matrixData.Dispose();
             _matrixLength.Dispose();
             _doRender.Dispose();
         }
 
-        private void Update()
+        public override void Setup(int instances)
         {
-            if (!IsSetup)
-                return;
+            base.Setup(instances);
 
-            //Do pre rendering calculations like culling.
-            PreRender();
-
-            //Actually render the meshes.
-            Render();
-        }
-
-        public void SetCamera(Camera camera)
-        {
-            _camera = camera;
-        }
-
-        protected virtual void Setup()
-        {
-            if (_camera == null)
-            {
-                _camera = FindObjectOfType<Camera>();
-                if (_camera == null)
-                    Debug.LogError("No camera set for InstanceSpawningManager and no camera found in scene to default to. Ensure a camera is setup.");
-                else
-                    Debug.LogWarning("<color=orange>No camera set for InstancingSpawningManager. Set do default camera: " + _camera.name + "</color>");
-            }
             Mesh = _meshSet.Meshes[0];
-
-#if UNITY_EDITOR
-            _prerenderTimer = new Stopwatch();
-#endif
-
-        }
-
-        public void Allocate(int instancesCount, Camera camera)
-        {
-            SetCamera(camera);
-            Allocate(instancesCount);
-        }
-
-        public virtual void Allocate(int instancesCount)
-        {
-            Setup();
-            if (Mesh == null)
-            {
-                Debug.Log("InstanceSpawningManager cannot allocate and setup without meshes.");
-                return;
-            }
 
             RenderParams = new RenderParams(Mesh.material);
             RenderParams.layer = Mesh.layer;
             RenderParams.shadowCastingMode = Mesh.shadowCastingMode;
             RenderParams.receiveShadows = Mesh.receiveShadows;
             RenderParams.camera = _camera;
+            //Flag that it is setup and allocate
+            IsSetup = true;
+            Allocate();
+        }
 
-
-            AvailableInstances = instancesCount;
-
+        protected override void Allocate()
+        {
             //Lets allocate all of the arrays, we will also track how much we allocated
             //Float 3 does not have a predefined size, but it contains 3 floats
             //Matrix4x4 does not have a predefined size, but it contains 16 floats
             AllocatedKB = 0;
             int floatSize = sizeof(float);
             int matrixSize = floatSize * 16;
-            int float3Size = floatSize * 3;
 
-            //Ensure all of the native arrays are setup
-            _positions = new NativeArray<float3>(AvailableInstances, Allocator.Persistent);
-            AllocatedKB += float3Size * AvailableInstances;
+            _data = new NativeArray<PoolInstanceData>(AvailableInstances, Allocator.Persistent);
+            AllocatedKB += PoolInstanceData.GetSize() * AvailableInstances;
 
-            //Ensure all of the native arrays are setup
-            _rotations = new NativeArray<Quaternion>(AvailableInstances, Allocator.Persistent);
-            AllocatedKB += (floatSize * 4) * AvailableInstances;
-
-            //Ensure all of the native arrays are setup
-            _scale = new NativeArray<float3>(AvailableInstances, Allocator.Persistent);
-            AllocatedKB += float3Size * AvailableInstances;
+            //Initial indexes
+            for (int i = 0; i < _data.Length; i++)
+                _data[i] = new PoolInstanceData() { index = i };
 
             //Allocate matrix data
             _matrixData = new NativeArray<Matrix4x4>(AvailableInstances, Allocator.Persistent);
@@ -182,43 +126,111 @@ namespace GPUInstancing
             IsSetup = true;
         }
 
-        protected virtual void PreRender(bool stopTimer = true)
+        protected override void PreRender(bool stopTimer = true)
         {
-#if UNITY_EDITOR
-            _prerenderTimer.Restart();
-#endif
+            base.PreRender(false);
 
-            UpdateMatrixJob updateMatrix = new UpdateMatrixJob()
+            if (_doPrerender)
             {
-                matrixLengths = _matrixLength,
-                matrixData = _matrixData,
-                positions = _positions,
-                rotations = _rotations,
-                scales = _scale,
-            };
-
-            JobHandle updateMatrixHandle = updateMatrix.Schedule();
-            updateMatrixHandle.Complete();
+                UpdateMatrixData();
+            }
 
             if (stopTimer)
                 FinishPreRender();
         }
 
-        protected void FinishPreRender()
+        private void UpdateMatrixData()
         {
-#if UNITY_EDITOR
-            _prerenderTimer.Stop();
-            CpuTimeMilliseconds = _prerenderTimer.ElapsedMilliseconds;
+            UpdateMatrixJob updateMatrix = new UpdateMatrixJob()
+            {
+                matrixLengths = _matrixLength,
+                matrixData = _matrixData,
+                data = _data,
+            };
 
-            if (_prerenderTimer.ElapsedMilliseconds > 1)
-                Debug.Log("Took: " + _prerenderTimer.ElapsedMilliseconds + "ms in prerender.");
-#endif
+            JobHandle updateMatrixHandle = updateMatrix.Schedule();
+            updateMatrixHandle.Complete();
         }
 
-        protected virtual void Render()
+        public void CopyData(out NativeArray<PoolInstanceData> data)
+        {
+            data = _data;
+        }
+
+        public void UpdatePoints(NativeArray<PoolInstanceData> toUpdate)
+        {
+            UpdatePointsJob updatePoints = new UpdatePointsJob()
+            {
+                toUpdate = toUpdate,
+                data = _data,
+            };
+
+            JobHandle updatePointsHandle = updatePoints.Schedule();
+            updatePointsHandle.Complete();
+            _doPrerender = true;
+        }
+
+        public void UpdatePoints(PoolInstanceData[] toUpdate)
+        {
+            NativeArray<PoolInstanceData> toUpdateNA = new NativeArray<PoolInstanceData>(toUpdate, Allocator.TempJob);
+
+            UpdatePointsJob updatePoints = new UpdatePointsJob()
+            {
+                toUpdate = toUpdateNA,
+                data = _data,
+            };
+
+            JobHandle updatePointsHandle = updatePoints.Schedule();
+            updatePointsHandle.Complete();
+            toUpdateNA.Dispose();
+            _doPrerender = true;
+        }
+
+        public void RemovePoints(int[] toRemove)
+        {
+            if (toRemove.Length == 0)
+                return;
+            NativeArray<int> toRemoveNA = new NativeArray<int>(toRemove, Allocator.TempJob);
+
+            RemovePointsJob removePoints = new RemovePointsJob()
+            {
+                toRemove = toRemoveNA,
+                data = _data,
+            };
+
+            JobHandle removePointsHandle = removePoints.Schedule();
+            removePointsHandle.Complete();
+            toRemoveNA.Dispose();
+            _doPrerender = true;
+        }
+
+        public void AddPoints(PoolInstanceData[] toAdd)
+        {
+            NativeArray<PoolInstanceData> toRemoveNA = new NativeArray<PoolInstanceData>(toAdd, Allocator.TempJob);
+
+            AddPointsJob addPoints = new AddPointsJob()
+            {
+                toAdd = toRemoveNA,
+                data = _data,
+            };
+
+            JobHandle addPointsHandle = addPoints.Schedule();
+            addPointsHandle.Complete();
+            toRemoveNA.Dispose();
+            _doPrerender = true;
+        }
+
+        public void UpdateData(ref NativeArray<PoolInstanceData> data)
+        {
+            NativeArray<PoolInstanceData>.Copy(data, _data);
+            _doPrerender = true;
+        }
+
+        protected override void Render()
         {
             if (_matrixLength[0] == 0)
                 return;
+
             Graphics.RenderMeshInstanced(RenderParams,
                 Mesh.mesh,
                 Mesh.submeshIndex,
@@ -226,18 +238,17 @@ namespace GPUInstancing
                 );
         }
 
+
+        //============================================ Jobs
+
+
         [BurstCompile]
         protected struct UpdateMatrixJob : IJob
         {
             public NativeArray<int> matrixLengths;
             public NativeArray<Matrix4x4> matrixData;
 
-            public NativeArray<float3> positions;
-            public NativeArray<Quaternion> rotations;
-            public NativeArray<float3> scales;
-
-            public Matrix4x4 tmp;
-            public Vector4 pos;
+            [ReadOnly] public NativeArray<PoolInstanceData> data;
 
             [BurstCompile]
             public void Execute()
@@ -245,13 +256,87 @@ namespace GPUInstancing
                 for (int i = 0; i < matrixLengths.Length; i++)
                     matrixLengths[i] = 0;
 
-                for (int i = 0; i < positions.Length; i++)
+                for (int i = 0; i < matrixData.Length; i++)
                 {
-                    matrixData[matrixLengths[0]] = Matrix4x4.TRS(positions[i], rotations[i], scales[i]);
+                    //Check if we actually want to use this
+                    if (!data[i].doRender)
+                        continue;
 
+                    //Update positions and the length
+                    matrixData[matrixLengths[0]] = Matrix4x4.TRS(data[i].position, data[i].rotation, data[i].scale);
                     matrixLengths[0]++;
                 }
             }
         }
+
+        [BurstCompile]
+        protected struct UpdatePointsJob : IJob
+        {
+            [ReadOnly] public NativeArray<PoolInstanceData> toUpdate;
+            public NativeArray<PoolInstanceData> data;
+            [BurstCompile]
+            public void Execute()
+            {
+                for (int i = 0; i < toUpdate.Length; i++)
+                {
+                    //Lets check to make sure we are in bounds
+                    if (toUpdate[i].index < 0 || toUpdate[i].index >= data.Length)
+                        continue;
+
+                    data[toUpdate[i].index] = toUpdate[i];
+                }
+            }
+        }
+
+        [BurstCompile]
+        protected struct AddPointsJob : IJob
+        {
+            [ReadOnly] public NativeArray<PoolInstanceData> toAdd;
+            public NativeArray<PoolInstanceData> data;
+            [BurstCompile]
+            public void Execute()
+            {
+                int added = 0;
+                PoolInstanceData tmp;
+
+                for (int i = 0; i < data.Length; i++)
+                {
+                    //Look for a position that is not being used
+                    if (data[i].doRender)
+                        continue;
+
+                    tmp = toAdd[added];
+                    tmp.index = i;
+                    data[i] = tmp;
+                    added++;
+                    if (added >= toAdd.Length)
+                        return;
+                }
+
+                Debug.Log("Failed to add points to job, ran out of allocated spaces.");
+            }
+        }
+        [BurstCompile]
+        protected struct RemovePointsJob : IJob
+        {
+            [ReadOnly] public NativeArray<int> toRemove;
+            public NativeArray<PoolInstanceData> data;
+            [BurstCompile]
+            public void Execute()
+            {
+                PoolInstanceData tmp;
+                for (int i = 0; i < toRemove.Length; i++)
+                {
+                    //Lets check to make sure we are in bounds
+                    if (toRemove[i] < 0 || toRemove[i] >= data.Length)
+                        continue;
+
+                    tmp = data[toRemove[i]];
+                    tmp.doRender = false;
+                    data[toRemove[i]] = tmp;
+                }
+            }
+        }
     }
+
 }

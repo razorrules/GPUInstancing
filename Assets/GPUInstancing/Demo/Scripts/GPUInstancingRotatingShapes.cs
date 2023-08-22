@@ -14,6 +14,7 @@ namespace GPUInstancing.Samples
 
         public int spawnRadius;
         public float rotateSpeed;
+        public float radiusSpeedBoost = 0;
 
         [NativeDisableParallelForRestriction]
         protected NativeArray<float> _angle;
@@ -28,9 +29,9 @@ namespace GPUInstancing.Samples
             _radius.Dispose();
         }
 
-        public override void Allocate(int instancesCount)
+        protected override void Allocate()
         {
-            base.Allocate(instancesCount);
+            base.Allocate();
 
             _angle = new NativeArray<float>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += sizeof(float) * AvailableInstances;
@@ -39,16 +40,21 @@ namespace GPUInstancing.Samples
             AllocatedKB += sizeof(float) * AvailableInstances;
 
             Layout();
+            Debug.Log("Allocated");
         }
 
+        /// <summary>
+        /// Layout the objects in a random pattern. 
+        /// This is done by given random radius and random angle.
+        /// </summary>
         private void Layout()
         {
-
             for (int i = 0; i < AvailableInstances; i++)
             {
 
                 System.Random r = new System.Random();
 
+                //Default matrix data
                 _scale[i] = new float3(1, 1, 1);
                 _rotations[i] = Quaternion.identity;
                 _matrixData[i] = Matrix4x4.TRS(
@@ -56,6 +62,7 @@ namespace GPUInstancing.Samples
                     Quaternion.identity,
                     Vector3.one);
 
+                //Set random angle and radius
                 _angle[i] = r.Next(0, 360);
                 _radius[i] = (float)r.NextDouble() * spawnRadius;
 
@@ -64,9 +71,7 @@ namespace GPUInstancing.Samples
 
         protected override void PreRender(bool stopTimer = true)
         {
-            base.PreRender(false);
-
-            //Calculate the LOD groups and what different points should use
+            //Make all of the points circle the center
             CircleCenter circleCenter = new CircleCenter()
             {
                 positions = _positions,
@@ -75,37 +80,33 @@ namespace GPUInstancing.Samples
                 angle = _angle,
                 radius = _radius,
                 rotateSpeed = rotateSpeed,
+                radiusSpeedBoost = radiusSpeedBoost,
                 deltaTime = Time.deltaTime,
             };
 
             JobHandle circleCenterHandle = circleCenter.Schedule(_positions.Length, 1);
             circleCenterHandle.Complete();
 
-            //Calculate the LOD groups and what different points should use
+            //Change the mesh dependent on position
             MeshSelection lodCheck = new MeshSelection()
             {
                 positions = _positions,
-                lodGroup = _lodGroup,
+                meshGroup = _meshGroup,
             };
 
             JobHandle lodCheckHandle = lodCheck.Schedule(_positions.Length, 1);
             lodCheckHandle.Complete();
 
+            //We want to call base pre-render after we finish moving around objects, as that will
+            //re-order the matrix data and ensure it is up to date with current changes
+            base.PreRender(false);
 
             if (stopTimer)
                 FinishPreRender();
         }
 
-        protected override void Setup()
-        {
-            base.Setup();
-
-        }
-
-
         /// <summary>
-        /// Checks the distance between camera and current position to 
-        /// see if it should be an LOD. 
+        /// Job that rotates positions around a given point
         /// </summary>
         [BurstCompile]
         protected struct CircleCenter : IJobParallelFor
@@ -117,30 +118,28 @@ namespace GPUInstancing.Samples
             public NativeArray<float3> scale;
             [ReadOnly] public float rotateSpeed;
             [ReadOnly] public float deltaTime;
+            [ReadOnly] public float radiusSpeedBoost;
 
             [BurstCompile]
             public void Execute(int index)
             {
-                angle[index] += rotateSpeed * deltaTime;
+                angle[index] += (rotateSpeed + (radius[index] * radiusSpeedBoost)) * deltaTime;
 
                 positions[index] = new float3(
                     radius[index] * math.cos(angle[index] * math.PI / 180f),
                     0,
                     radius[index] * math.sin(angle[index] * math.PI / 180f));
-
             }
-
         }
 
         /// <summary>
-        /// Checks the distance between camera and current position to 
-        /// see if it should be an LOD. 
+        /// Checks the position of each instanced mesh and sets the mesh group depending on quadrant in world space
         /// </summary>
         [BurstCompile]
         protected struct MeshSelection : IJobParallelFor
         {
             public NativeArray<float3> positions;
-            public NativeArray<byte> lodGroup;
+            public NativeArray<byte> meshGroup;
 
             [BurstCompile]
             public void Execute(int index)
@@ -152,16 +151,16 @@ namespace GPUInstancing.Samples
                 if (positiveX)
                 {
                     if (positiveZ)
-                        lodGroup[index] = 0;
+                        meshGroup[index] = 0;
                     else
-                        lodGroup[index] = 1;
+                        meshGroup[index] = 1;
                 }
                 else
                 {
                     if (positiveZ)
-                        lodGroup[index] = 2;
+                        meshGroup[index] = 2;
                     else
-                        lodGroup[index] = 3;
+                        meshGroup[index] = 3;
                 }
 
             }
