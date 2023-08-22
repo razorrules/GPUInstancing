@@ -18,5 +18,5 @@ MonoBehaviour:
     material: {fileID: 2100000, guid: 5dbaddf973e926a469f06174fa9b3934, type: 2}
     submeshIndex: 1
     layer: 0
-    shadowCastingMode: 1
+    shadowCastingMode: 0
     receiveShadows: 0
