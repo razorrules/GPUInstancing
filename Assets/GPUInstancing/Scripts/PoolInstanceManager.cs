@@ -8,8 +8,6 @@ using Debug = UnityEngine.Debug;
 using System;
 using System.Collections.Generic;
 
-//TODO: Create a pooling system
-
 namespace GPUInstancing
 {
 
