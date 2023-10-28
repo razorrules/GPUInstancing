@@ -7,7 +7,7 @@ using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 using System;
 
-//TODO: Create a pooling system
+
 
 namespace GPUInstancing
 {
@@ -23,7 +23,7 @@ namespace GPUInstancing
     /// </summary>
     public class LODInstanceManager : MonoBehaviour
     {
-        //TODO: Handle culling if it is incredibly close
+        //Culling is already handled.
         //TODO: Investigate why CPU time is high, probably some easy optimization that can be done.
         public const float CAMERA_CULL_OFFSET_PIXELS = 100;
 

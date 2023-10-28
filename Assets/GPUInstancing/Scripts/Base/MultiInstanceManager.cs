@@ -7,23 +7,19 @@ using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 using System;
 
-//TODO: Create a pooling system
-
 namespace GPUInstancing
 {
 
     /// <summary>
-    /// This class can handle spawning a mesh with various levels of LOD.
-    /// Handles Culling and supports real time lighting all using instancing
-    /// for incredible performance. Objects are not real would so will not
-    /// be able to attach components to them, but can be modified based on 
-    /// a matrix.
-    /// 
-    /// If you override OnDestroy, ensure that you deallocate everything.
+    /// This class allows for multiple different meshes to be used in one script. This is not as
+    /// performant as writing different managers, but makes it easier to work with considered centralized 
+    /// data. The main drawback to this, is if we have 1000 max instances, with 4 different meshes, then we 
+    /// need to account for all combinations. (Combinations meaning 1000 cubes rendered | 500 cubes, 500 spheres).
+    /// To make this easier, we just set the matrix data array to instances * meshes. Meaning we allocate four
+    /// times as much.
     /// </summary>
     public class MultiInstanceManager : InstanceManagerBase
     {
-        [Header("Settings")]
         [SerializeField] private InstanceMeshSet _meshSet;
 
         //List of all positions on the grid
@@ -71,8 +67,10 @@ namespace GPUInstancing
 
             Meshes = _meshSet.Meshes;
 
+            //Setup the render params array
             RenderParams = new RenderParams[MeshesCount];
 
+            //Setup the render params to the meshes data
             for (int i = 0; i < RenderParams.Length; i++)
             {
                 RenderParams[i] = new RenderParams(Meshes[i].material);
@@ -121,10 +119,18 @@ namespace GPUInstancing
             AllocatedKB += sizeof(int) * MeshesCount;
 
             AllocatedKB /= 1024;
-            Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
 
             IsSetup = true;
+
+            Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
         }
+
+
+        /// <summary>
+        /// Called after Setup and after everything has been allocated.
+        /// </summary>
+        protected virtual void PostSetup() { }
+
 
         protected override void PreRender(bool stopTimer = true)
         {

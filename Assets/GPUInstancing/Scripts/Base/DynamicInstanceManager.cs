@@ -3,27 +3,17 @@ using Unity.Jobs;
 using UnityEngine;
 using Unity.Mathematics;
 using Unity.Burst;
-using System.Diagnostics;
-using Debug = UnityEngine.Debug;
-using System;
 
 //TODO: Create a pooling system
-
 namespace GPUInstancing
 {
 
     /// <summary>
-    /// This class can handle spawning a mesh with various levels of LOD.
-    /// Handles Culling and supports real time lighting all using instancing
-    /// for incredible performance. Objects are not real would so will not
-    /// be able to attach components to them, but can be modified based on 
-    /// a matrix.
-    /// 
-    /// If you override OnDestroy, ensure that you deallocate everything.
+    /// This class allows for dynamic instanced meshes, providing the ability to change the position,
+    /// scale and rotation of each individual instanced mesh.
     /// </summary>
     public class DynamicInstanceManager : InstanceManagerBase
     {
-        [Header("Settings")]
         [SerializeField] private InstanceMeshSet _meshSet;
 
         /// <summary> Data related to all matrix's for all positions and LODS</summary>
@@ -66,9 +56,6 @@ namespace GPUInstancing
             //Set the mesh then we need to validate everything
             Mesh = _meshSet.Meshes[0];
 
-            if (!Validate())
-                return;
-
             //Setup after validation (Checks if material is valid)
             RenderParams = new RenderParams(Mesh.material);
             RenderParams.layer = Mesh.layer;
@@ -79,33 +66,6 @@ namespace GPUInstancing
             //Flag that it is setup and allocate
             IsSetup = true;
             Allocate();
-        }
-
-        /// <summary>
-        /// Validates that everything is setup correctly
-        /// </summary>
-        /// <returns></returns>
-        private bool Validate()
-        {
-            if (Mesh == null)
-            {
-                Debug.LogError("No mesh assigned to  " + GetType().Name);
-                return false;
-            }
-
-            if (Mesh.material == null)
-            {
-                Debug.LogError("The material assigned to mesh in meshset is null " + GetType().Name);
-                return false;
-            }
-
-            if (_camera == null)
-            {
-                Debug.LogError("No camera assigned to " + GetType().Name + ". Could not find valid camera in scene.");
-                return false;
-            }
-
-            return true;
         }
 
         /// <summary>
@@ -139,10 +99,17 @@ namespace GPUInstancing
             AllocatedKB /= 1024;
 
             Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
+
+            PostSetup();
         }
 
         /// <summary>
-        /// Handles prerendering
+        /// Called after Setup and after everything has been allocated.
+        /// </summary>
+        protected virtual void PostSetup() { }
+
+        /// <summary>
+        /// Handles pre-rendering. All we need to do is update matrix data.
         /// </summary>
         /// <param name="stopTimer"></param>
         protected override void PreRender(bool stopTimer = true)
@@ -191,10 +158,8 @@ namespace GPUInstancing
             [ReadOnly] public NativeArray<float3> scales;
 
             [BurstCompile]
-            public void Execute(int index)
-            {
+            public void Execute(int index) =>
                 matrixData[index] = Matrix4x4.TRS(positions[index], rotations[index], scales[index]);
-            }
 
         }
 

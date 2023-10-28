@@ -30,13 +30,9 @@ namespace GPUInstancing
     }
 
     /// <summary>
-    /// This class can handle spawning a mesh with various levels of LOD.
-    /// Handles Culling and supports real time lighting all using instancing
-    /// for incredible performance. Objects are not real would so will not
-    /// be able to attach components to them, but can be modified based on 
-    /// a matrix.
-    /// 
-    /// If you override OnDestroy, ensure that you deallocate everything.
+    /// This class allows you to use the GPU instancing as a pooling system. Provides helpful methods
+    /// for adding and removing points. Removing points takes indexes, so you will need to implement 
+    /// your own tracking as to which points you want to remove.
     /// </summary>
     public class PoolInstanceManager : InstanceManagerBase
     {
@@ -155,6 +151,10 @@ namespace GPUInstancing
             data = _data;
         }
 
+        /// <summary>
+        /// Update points from a native array. Does not dispose of native array being passed in
+        /// </summary>
+        /// <param name="toUpdate"></param>
         public void UpdatePoints(NativeArray<PoolInstanceData> toUpdate)
         {
             UpdatePointsJob updatePoints = new UpdatePointsJob()
@@ -168,22 +168,22 @@ namespace GPUInstancing
             _doPrerender = true;
         }
 
+        /// <summary>
+        /// Update points based on array
+        /// </summary>
+        /// <param name="toUpdate"></param>
         public void UpdatePoints(PoolInstanceData[] toUpdate)
         {
             NativeArray<PoolInstanceData> toUpdateNA = new NativeArray<PoolInstanceData>(toUpdate, Allocator.TempJob);
 
-            UpdatePointsJob updatePoints = new UpdatePointsJob()
-            {
-                toUpdate = toUpdateNA,
-                data = _data,
-            };
-
-            JobHandle updatePointsHandle = updatePoints.Schedule();
-            updatePointsHandle.Complete();
+            UpdatePoints(toUpdateNA);
             toUpdateNA.Dispose();
-            _doPrerender = true;
         }
 
+        /// <summary>
+        /// Remove points from pool based on index
+        /// </summary>
+        /// <param name="toRemove"></param>
         public void RemovePoints(int[] toRemove)
         {
             if (toRemove.Length == 0)
@@ -202,6 +202,10 @@ namespace GPUInstancing
             _doPrerender = true;
         }
 
+        /// <summary>
+        /// Add new points to the pool
+        /// </summary>
+        /// <param name="toAdd"></param>
         public void AddPoints(PoolInstanceData[] toAdd)
         {
             NativeArray<PoolInstanceData> toRemoveNA = new NativeArray<PoolInstanceData>(toAdd, Allocator.TempJob);
@@ -236,9 +240,7 @@ namespace GPUInstancing
                 );
         }
 
-
         //============================================ Jobs
-
 
         [BurstCompile]
         protected struct UpdateMatrixJob : IJob

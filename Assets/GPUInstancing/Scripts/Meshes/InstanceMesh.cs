@@ -4,10 +4,12 @@ using UnityEngine.Rendering;
 namespace GPUInstancing
 {
 
+    /// <summary>
+    /// Individual mesh for GPU instancing.
+    /// </summary>
     [System.Serializable]
     public class InstanceMesh
     {
-        public float renderDistance;
         public Mesh mesh;
         public Material material;
         public int submeshIndex = 1;

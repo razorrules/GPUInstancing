@@ -26,9 +26,9 @@ namespace GPUInstancing.Samples
                 yScale = 0;
         }
 
-        public override void Allocate(int instancesCount)
+        protected override void PostSetup()
         {
-            base.Allocate(instancesCount);
+            base.PostSetup();
             GridLayout();
         }
 

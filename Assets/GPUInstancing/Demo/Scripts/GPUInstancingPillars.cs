@@ -30,15 +30,14 @@ namespace GPUInstancing.Samples
             base.Deallocate();
         }
 
-        protected override void Setup()
+        protected override void PreAllocate()
         {
-            base.Setup();
+            base.PreAllocate();
             int sqr = (int)Mathf.Sqrt(AvailableInstances);
         }
 
-        public override void Allocate(int instancesCount)
+        protected override void PostSetup()
         {
-            base.Allocate(instancesCount);
             GridLayout();
         }
 
