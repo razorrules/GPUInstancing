@@ -7,16 +7,14 @@ using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 using System;
 
-//TODO: Create a pooling system
-
-namespace GPUInstancing
+namespace Laio.GPUInstancing
 {
 
     /// <summary>
     /// This is a base class that provides no additional functionality other then boilerplate code to 
     /// render a mesh set. 
     /// </summary>
-    public class InstanceManager : InstanceManagerBase
+    public class SingleInstanceManager : InstanceManagerBase
     {
         [SerializeField] private InstanceMeshSet _meshSet;
 
@@ -37,19 +35,15 @@ namespace GPUInstancing
             _matrixData.Dispose();
         }
 
-        /// <summary>
-        /// Called to setup the instance manager. 
-        /// </summary>
-        /// <param name="instances"></param>
+        protected virtual void PreAllocate()
+        {
+            Mesh = _meshSet.Meshes[0];
+        }
+
         public override void Setup(int instances)
         {
             base.Setup(instances);
             Allocate();
-        }
-
-        protected virtual void PreAllocate()
-        {
-            Mesh = _meshSet.Meshes[0];
         }
 
         /// <summary>
@@ -60,7 +54,7 @@ namespace GPUInstancing
         /// <summary>
         /// Allocate all native arrays and other related date.
         /// </summary>
-        protected override void Allocate()
+        protected override void Allocate(bool finishAllocation = true)
         {
             PreAllocate();
 
@@ -87,11 +81,7 @@ namespace GPUInstancing
             _matrixData = new NativeArray<Matrix4x4>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += (matrixSize * AvailableInstances);
 
-            AllocatedKB /= 1024;
-
-            IsSetup = true;
-
-            Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
+            FinishAllocation();
             PostSetup();
         }
 

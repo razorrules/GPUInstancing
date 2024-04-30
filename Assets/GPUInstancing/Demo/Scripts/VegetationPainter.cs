@@ -1,11 +1,10 @@
-using GPUInstancing;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
 
-namespace GPUInstancing.Samples.VegetationPainter
+namespace Laio.GPUInstancing.Samples.VegetationPainter
 {
 
     /// <summary>

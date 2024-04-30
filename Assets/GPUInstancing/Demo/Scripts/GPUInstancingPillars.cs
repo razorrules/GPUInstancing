@@ -6,9 +6,9 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace GPUInstancing.Samples
+namespace Laio.GPUInstancing.Samples
 {
-    public class GPUInstancingPillars : InstanceManager
+    public class GPUInstancingPillars : SingleInstanceManager
     {
         [Header("Construct settings")]
         public float gridOffset;
@@ -24,17 +24,6 @@ namespace GPUInstancing.Samples
         public float scale = 8.0f;
         public float heightScale = 5.0f;
         public float timeScale = 2.0f;
-
-        protected override void Deallocate()
-        {
-            base.Deallocate();
-        }
-
-        protected override void PreAllocate()
-        {
-            base.PreAllocate();
-            int sqr = (int)Mathf.Sqrt(AvailableInstances);
-        }
 
         protected override void PostSetup()
         {

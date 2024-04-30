@@ -7,7 +7,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using Random = System.Random;
 
-namespace GPUInstancing.Samples
+namespace Laio.GPUInstancing.Samples
 {
 
     /// <summary>
@@ -47,9 +47,9 @@ namespace GPUInstancing.Samples
         /// <summary>
         /// Set base seed and call layout
         /// </summary>
-        protected override void Allocate()
+        protected override void Allocate(bool finishAllocation = true)
         {
-            base.Allocate();
+            base.Allocate(true);
             baseSeed = 1;
             Layout();
         }
@@ -90,7 +90,7 @@ namespace GPUInstancing.Samples
                     deltaTime = Time.deltaTime,
                 };
 
-                JobHandle snowflakeHandle = snowFlakeFall.Schedule(_matrixData.Length, 1);
+                JobHandle snowflakeHandle = snowFlakeFall.Schedule(_positions.Length, 1);
                 snowflakeHandle.Complete();
 
             }
@@ -105,7 +105,7 @@ namespace GPUInstancing.Samples
                 baseSeed = baseSeed,
             };
 
-            JobHandle resetCheckHandle = resetCheck.Schedule(_matrixData.Length, 1);
+            JobHandle resetCheckHandle = resetCheck.Schedule(_positions.Length, 1);
             resetCheckHandle.Complete();
 
             //Ensure that we stop the pre-render timer so we can track performance

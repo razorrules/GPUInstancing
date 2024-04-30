@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace GPUInstancing.Samples
+namespace Laio.GPUInstancing.Samples
 {
     [RequireComponent(typeof(CharacterController))]
     public class SampleCharacterController : MonoBehaviour

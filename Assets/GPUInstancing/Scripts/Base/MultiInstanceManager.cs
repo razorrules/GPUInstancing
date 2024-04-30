@@ -7,7 +7,7 @@ using System.Diagnostics;
 using Debug = UnityEngine.Debug;
 using System;
 
-namespace GPUInstancing
+namespace Laio.GPUInstancing
 {
 
     /// <summary>
@@ -20,7 +20,7 @@ namespace GPUInstancing
     /// </summary>
     public class MultiInstanceManager : InstanceManagerBase
     {
-        [SerializeField] private InstanceMeshSet _meshSet;
+        [SerializeField] protected InstanceMeshSet _meshSet;
 
         //List of all positions on the grid
         [NativeDisableParallelForRestriction]
@@ -42,7 +42,7 @@ namespace GPUInstancing
         [NativeDisableParallelForRestriction]
         protected NativeArray<int> _matrixLength;
 
-        private RenderParams[] RenderParams;
+        protected RenderParams[] RenderParams;
 
         //========== Properties
         public int MeshesCount { get => Meshes.Length; }
@@ -83,9 +83,8 @@ namespace GPUInstancing
             Allocate();
         }
 
-        protected override void Allocate()
+        protected override void Allocate(bool finishAllocation = true)
         {
-
             //Lets allocate all of the arrays, we will also track how much we allocated
             //Float 3 does not have a predefined size, but it contains 3 floats
             //Matrix4x4 does not have a predefined size, but it contains 16 floats
@@ -118,19 +117,14 @@ namespace GPUInstancing
             _matrixLength = new NativeArray<int>(MeshesCount, Allocator.Persistent);
             AllocatedKB += sizeof(int) * MeshesCount;
 
-            AllocatedKB /= 1024;
-
-            IsSetup = true;
-
-            Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
+            if (finishAllocation)
+                FinishAllocation();
         }
-
 
         /// <summary>
         /// Called after Setup and after everything has been allocated.
         /// </summary>
         protected virtual void PostSetup() { }
-
 
         protected override void PreRender(bool stopTimer = true)
         {
@@ -138,7 +132,7 @@ namespace GPUInstancing
 
             UpdateMatrixJob updateMatrix = new UpdateMatrixJob()
             {
-                lodGroups = _meshGroup,
+                meshGroup = _meshGroup,
                 matrixLengths = _matrixLength,
                 matrixData = _matrixData,
                 positions = _positions,
@@ -171,7 +165,7 @@ namespace GPUInstancing
         [BurstCompile]
         protected struct UpdateMatrixJob : IJob
         {
-            public NativeArray<byte> lodGroups;
+            public NativeArray<byte> meshGroup;
 
             public NativeArray<int> matrixLengths;
             public NativeArray<Matrix4x4> matrixData;
@@ -191,9 +185,9 @@ namespace GPUInstancing
 
                 for (int i = 0; i < positions.Length; i++)
                 {
-                    matrixData[positions.Length * lodGroups[i] + matrixLengths[lodGroups[i]]] = Matrix4x4.TRS(positions[i], rotations[i], scales[i]);
+                    matrixData[positions.Length * meshGroup[i] + matrixLengths[meshGroup[i]]] = Matrix4x4.TRS(positions[i], rotations[i], scales[i]);
 
-                    matrixLengths[lodGroups[i]]++;
+                    matrixLengths[meshGroup[i]]++;
                 }
             }
         }

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace GPUInstancing
+namespace Laio.GPUInstancing
 {
     [CreateAssetMenu(fileName = "InstanceMeshSet", menuName = "Laio/Instance Mesh Set")]
     public class InstanceMeshSet : ScriptableObject

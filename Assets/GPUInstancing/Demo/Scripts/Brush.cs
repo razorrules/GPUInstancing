@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace GPUInstancing.Samples.VegetationPainter
+namespace Laio.GPUInstancing.Samples.VegetationPainter
 {
 
     /// <summary>
@@ -76,7 +76,6 @@ namespace GPUInstancing.Samples.VegetationPainter
             if (Input.GetMouseButton(0))
             {
                 //Generate random points based on density in range
-                //TODO: This is generated as a square, normalize it so it will match brush size
                 List<Vector3> generatedPoints = new List<Vector3>();
                 Vector2 random;
                 for (int i = 0; i < density; i++)

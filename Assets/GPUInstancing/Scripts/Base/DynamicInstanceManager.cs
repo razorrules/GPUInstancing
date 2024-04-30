@@ -4,8 +4,7 @@ using UnityEngine;
 using Unity.Mathematics;
 using Unity.Burst;
 
-//TODO: Create a pooling system
-namespace GPUInstancing
+namespace Laio.GPUInstancing
 {
 
     /// <summary>
@@ -18,9 +17,8 @@ namespace GPUInstancing
 
         /// <summary> Data related to all matrix's for all positions and LODS</summary>
         [NativeDisableParallelForRestriction]
-        protected NativeArray<Matrix4x4> _matrixData;
+        private NativeArray<Matrix4x4> _matrixData;
 
-        //List of all positions on the grid
         [NativeDisableParallelForRestriction]
         protected NativeArray<float3> _positions;
 
@@ -71,10 +69,9 @@ namespace GPUInstancing
         /// <summary>
         /// Allocate all of the native arrays we plan on using
         /// </summary>
-        protected override void Allocate()
+        protected override void Allocate(bool finishAllocation = true)
         {
             //Keep track of how much data we are allocating
-            AllocatedKB = 0;
             int floatSize = sizeof(float);
             int matrixSize = floatSize * 16;
             int float3Size = floatSize * 3;
@@ -95,10 +92,8 @@ namespace GPUInstancing
             _matrixData = new NativeArray<Matrix4x4>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += (matrixSize * AvailableInstances);
 
-            //Finally divide by 1024 so we get KB
-            AllocatedKB /= 1024;
-
-            Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
+            if (finishAllocation)
+                FinishAllocation();
 
             PostSetup();
         }

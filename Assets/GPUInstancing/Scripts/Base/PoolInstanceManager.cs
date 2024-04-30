@@ -8,7 +8,7 @@ using Debug = UnityEngine.Debug;
 using System;
 using System.Collections.Generic;
 
-namespace GPUInstancing
+namespace Laio.GPUInstancing
 {
 
     public struct PoolInstanceData
@@ -90,7 +90,7 @@ namespace GPUInstancing
             Allocate();
         }
 
-        protected override void Allocate()
+        protected override void Allocate(bool finishAllocation = true)
         {
             //Lets allocate all of the arrays, we will also track how much we allocated
             //Float 3 does not have a predefined size, but it contains 3 floats
@@ -114,10 +114,7 @@ namespace GPUInstancing
             _matrixLength = new NativeArray<int>(1, Allocator.Persistent);
             AllocatedKB += sizeof(int);
 
-            AllocatedKB /= 1024;
-            Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
-
-            IsSetup = true;
+            FinishAllocation();
         }
 
         protected override void PreRender(bool stopTimer = true)

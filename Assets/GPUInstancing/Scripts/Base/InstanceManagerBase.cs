@@ -5,11 +5,13 @@ using System.Diagnostics;
 #endif
 using UnityEngine;
 
-namespace GPUInstancing
+namespace Laio.GPUInstancing
 {
 
     /// <summary>
-    /// Base class for all instance managers to use.
+    /// Base class for all instance managers. This is simply a template of methods that also contains
+    /// the most basic data and references. Such as Camera and number of instances. 
+    /// Performance is tracked here and is wrapped in UNITY_EDITOR
     /// </summary>
     public abstract class InstanceManagerBase : MonoBehaviour
     {
@@ -52,7 +54,7 @@ namespace GPUInstancing
         /// <summary>
         /// Call pre-render and render
         /// </summary>
-        public void Update()
+        protected virtual void Update()
         {
             if (!IsSetup)
                 return;
@@ -72,12 +74,13 @@ namespace GPUInstancing
         /// </summary>
         private void OnDestroy()
         {
-            //Dispose all of the arrays whenever object is destroy4ed
+            //Dispose all of the arrays whenever object is destroyed
             Deallocate();
         }
 
+#if UNITY_EDITOR
         /// <summary>
-        /// Displays data about current performance
+        /// Displays data about current performance. This is also wrapped in UNITY_EDITOR
         /// </summary>
         private void OnGUI()
         {
@@ -88,10 +91,11 @@ namespace GPUInstancing
                 GUI.Label(new Rect(0, 60, 500, 30), "Toggle hotkey: " + DISPLAY_PERFORMANCE_HOTKEY + "(InstanceManagerBase.DISPLAY_PERFORMANCE_HOTKEY)");
             }
         }
+#endif
 
         //================ Public / protected
         /// <summary>
-        /// Overload to setup that allows camera
+        /// Overload to setup that allows you to directly set the camera
         /// </summary>
         /// <param name="instances"></param>
         /// <param name="cam"></param>
@@ -115,7 +119,7 @@ namespace GPUInstancing
         /// <summary>
         /// Manages the stopwatch for tracking performance with pre-render.
         /// </summary>
-        protected void FinishPreRender()
+        protected virtual void FinishPreRender()
         {
 #if UNITY_EDITOR
             _prerenderTimer.Stop();
@@ -139,7 +143,6 @@ namespace GPUInstancing
             //If there is no camera, then let us try and find one.
             if (_camera == null)
                 TryGetCamera();
-
         }
 
         /// <summary>
@@ -157,7 +160,7 @@ namespace GPUInstancing
         /// <summary>
         /// Allocate the native arrays
         /// </summary>
-        protected abstract void Allocate();
+        protected abstract void Allocate(bool finishAllocation = true);
 
         /// <summary>
         /// Deallocate all of the native arrays
@@ -169,7 +172,16 @@ namespace GPUInstancing
         /// </summary>
         protected abstract void Render();
 
-
+        /// <summary>
+        /// AllocatedKB is not calculated until you call this. This is because as we make subclasses we may want
+        /// to allocate more data.
+        /// </summary>
+        protected void FinishAllocation()
+        {
+            AllocatedKB /= 1024;
+            IsSetup = true;
+            UnityEngine.Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
+        }
 
 
     }

@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace GPUInstancing
+namespace Laio.GPUInstancing
 {
 
     /// <summary>

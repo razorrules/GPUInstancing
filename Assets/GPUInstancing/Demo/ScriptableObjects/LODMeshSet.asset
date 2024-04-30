@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 996c1dcea63da1c42b6c6a61c5f5a84c, type: 3}
+  m_Name: LODMeshSet
+  m_EditorClassIdentifier: 
+  _meshes:
+  - mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: c2367196f20bb7540a5f826b7efa3e6b, type: 2}
+    submeshIndex: 1
+    layer: 0
+    shadowCastingMode: 1
+    receiveShadows: 0
+  - mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: 414ff3e90da95e34e8fd07e5bb4051ad, type: 2}
+    submeshIndex: 1
+    layer: 0
+    shadowCastingMode: 1
+    receiveShadows: 0
+  - mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+    material: {fileID: 2100000, guid: e3b17195b9d747a468e65fc147ada8e5, type: 2}
+    submeshIndex: 1
+    layer: 0
+    shadowCastingMode: 1
+    receiveShadows: 0
