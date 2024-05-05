@@ -2,29 +2,20 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace GPUInstancing.Samples
+namespace Laio.GPUInstancing.Samples
 {
 
     public class MaterialLerper : MonoBehaviour
     {
-        public Color[] colors;
-
-        public float timeToLerp;
-
+        [SerializeField] private Color[] colors;
+        [SerializeField] private float timeToLerp;
         [Space(10)]
-        public Material mat;
+        [SerializeField] private Material mat;
 
         private float _curTime;
         private int _curIndex;
 
-        // Start is called before the first frame update
-        void Start()
-        {
-
-        }
-
-        // Update is called once per frame
-        void Update()
+        private void Update()
         {
             _curTime += Time.deltaTime / timeToLerp;
             if (_curTime > 1)

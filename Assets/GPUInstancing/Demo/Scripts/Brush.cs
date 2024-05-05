@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace GPUInstancing.Samples.VegetationPainter
+namespace Laio.GPUInstancing.Samples.VegetationPainter
 {
 
     /// <summary>
@@ -22,8 +22,8 @@ namespace GPUInstancing.Samples.VegetationPainter
         public Transform brushObject;
         public float brushSize = 0;
         public float density = 0;
-        [Space()]
 
+        [Space]
         [SerializeField] private VegetationPainter _treePainter;
         [SerializeField] private VegetationPainter _grassPainter;
         [SerializeField] private VegetationPainter _bushPainter;
@@ -76,15 +76,15 @@ namespace GPUInstancing.Samples.VegetationPainter
             if (Input.GetMouseButton(0))
             {
                 //Generate random points based on density in range
-                //TODO: This is generated as a square, normalize it so it will match brush size
                 List<Vector3> generatedPoints = new List<Vector3>();
+                Vector2 random;
                 for (int i = 0; i < density; i++)
                 {
-                    generatedPoints.Add(
-                        position +
-                        new Vector3(UnityEngine.Random.Range(-brushSize, brushSize),
+                    random = Random.insideUnitCircle;
+                    generatedPoints.Add(new Vector3(
+                        position.x + random.x * brushSize,
                         0,
-                        UnityEngine.Random.Range(-brushSize, brushSize)));
+                        position.z + random.y * brushSize));
                 }
 
                 Painter.AddPoints(generatedPoints);
@@ -123,5 +123,6 @@ namespace GPUInstancing.Samples.VegetationPainter
             }
 
         }
+
     }
 }

@@ -6,13 +6,13 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace GPUInstancing.Samples
+namespace Laio.GPUInstancing.Samples
 {
 
     /// <summary>
     /// Lays out meshes in a grid and applies perlin noise to it
     /// </summary>
-    public class GPUInstancingPerlinNoise : InstanceManager
+    public class GPUInstancingPerlinNoise : SingleInstanceManager
     {
         [Header("Settings")]
         public float scale = 8.0f;
@@ -26,9 +26,9 @@ namespace GPUInstancing.Samples
                 yScale = 0;
         }
 
-        public override void Allocate(int instancesCount)
+        protected override void PostSetup()
         {
-            base.Allocate(instancesCount);
+            base.PostSetup();
             GridLayout();
         }
 

@@ -6,7 +6,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace GPUInstancing.Samples
+namespace Laio.GPUInstancing.Samples
 {
 
     public class GPUInstancingRotatingShapes : MultiInstanceManager
@@ -29,9 +29,9 @@ namespace GPUInstancing.Samples
             _radius.Dispose();
         }
 
-        protected override void Allocate()
+        protected override void Allocate(bool finishAllocation = true)
         {
-            base.Allocate();
+            base.Allocate(false);
 
             _angle = new NativeArray<float>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += sizeof(float) * AvailableInstances;
@@ -39,6 +39,7 @@ namespace GPUInstancing.Samples
             _radius = new NativeArray<float>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += sizeof(float) * AvailableInstances;
 
+            FinishAllocation();
             Layout();
             Debug.Log("Allocated");
         }
@@ -138,7 +139,7 @@ namespace GPUInstancing.Samples
         [BurstCompile]
         protected struct MeshSelection : IJobParallelFor
         {
-            public NativeArray<float3> positions;
+            [ReadOnly] public NativeArray<float3> positions;
             public NativeArray<byte> meshGroup;
 
             [BurstCompile]
