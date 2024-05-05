@@ -41,10 +41,11 @@ namespace Laio.GPUInstancing
         private bool _displayPerformance;
 
         //================ MonoBehaviour
+
         /// <summary>
         /// Check if we want to construct on awake
         /// </summary>
-        private void Awake()
+        protected virtual void Awake()
         {
             _displayPerformance = DEFAULT_PERFORMANCE_ON;
             if (constructInAwake)
@@ -182,7 +183,6 @@ namespace Laio.GPUInstancing
             IsSetup = true;
             UnityEngine.Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
         }
-
 
     }
 

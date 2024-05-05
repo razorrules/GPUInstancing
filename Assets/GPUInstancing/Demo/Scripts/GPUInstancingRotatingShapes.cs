@@ -139,7 +139,7 @@ namespace Laio.GPUInstancing.Samples
         [BurstCompile]
         protected struct MeshSelection : IJobParallelFor
         {
-            public NativeArray<float3> positions;
+            [ReadOnly] public NativeArray<float3> positions;
             public NativeArray<byte> meshGroup;
 
             [BurstCompile]
