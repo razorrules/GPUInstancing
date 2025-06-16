@@ -1,11 +1,5 @@
 using Unity.Collections;
-using Unity.Jobs;
 using UnityEngine;
-using Unity.Mathematics;
-using Unity.Burst;
-using System.Diagnostics;
-using Debug = UnityEngine.Debug;
-using System;
 
 namespace Laio.GPUInstancing
 {
@@ -47,11 +41,6 @@ namespace Laio.GPUInstancing
         }
 
         /// <summary>
-        /// Called after Setup and after everything has been allocated.
-        /// </summary>
-        protected virtual void PostSetup() { }
-
-        /// <summary>
         /// Allocate all native arrays and other related date.
         /// </summary>
         protected override void Allocate(bool finishAllocation = true)
@@ -81,8 +70,8 @@ namespace Laio.GPUInstancing
             _matrixData = new NativeArray<Matrix4x4>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += (matrixSize * AvailableInstances);
 
-            FinishAllocation();
-            PostSetup();
+            if (finishAllocation)
+                FinishAllocation();
         }
 
         protected override void Render()

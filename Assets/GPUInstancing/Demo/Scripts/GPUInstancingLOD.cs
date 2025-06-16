@@ -12,35 +12,28 @@ namespace Laio.GPUInstancing.Samples
         public float gridOffset;
         public Vector3 rotation;
 
-        protected override void Allocate(bool markSetup)
+        protected override void PostAllocation()
         {
-            base.Allocate(true);
+            base.PostAllocation();
             GridLayout();
         }
 
         private void GridLayout()
         {
-            //Next, we will set the grid of positions.
-            int x = 0;
-            int y = 0;
-
+            //Next, we will set the grid of positions. This is temp
             int rowSize = (int)Mathf.Sqrt(AvailableInstances);
 
             for (int i = 0; i < AvailableInstances; i++)
             {
-                if (y >= rowSize)
-                {
-                    x++;
-                    y = 0;
-                }
+                int x = i % rowSize;
+                int y = i / rowSize;
 
                 _positions[i] = new float3(x * gridOffset, 0, -y * gridOffset);
                 _rotations[i] = Quaternion.identity;
                 _scale[i] = new float3(1, 1, 1);
-
-                y++;
             }
         }
+
     }
 
 }

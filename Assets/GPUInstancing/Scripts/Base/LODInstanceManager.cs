@@ -35,6 +35,16 @@ namespace Laio.GPUInstancing
             _renderDistanceArray.Dispose();
         }
 
+        public int GetLODCount() { return _renderDistanceArray.Length + 1; }
+        public void SetLODDistance(int index, float distance)
+        {
+            _renderDistanceArray[index] = distance;
+        }
+        public float GetLODDistance(int index)
+        {
+            return _renderDistanceArray[index];
+        }
+
         /// <summary>
         /// Update render distance constantly, that way you are not forced to restart. 
         /// While also ensuring that the length of the render distance array is the 
@@ -75,8 +85,10 @@ namespace Laio.GPUInstancing
                 FinishAllocation();
         }
 
-        protected override void PreRender(bool stopTimer = true)
+        protected override void PreRender(bool finishPreRender = true)
         {
+            base.PreRender(false);
+
             //Calculate the LOD groups and what different points should use
             CalculateLODGroups lodCheck = new CalculateLODGroups()
             {
@@ -90,7 +102,8 @@ namespace Laio.GPUInstancing
             JobHandle lodCheckHandle = lodCheck.Schedule(_positions.Length, 1);
             lodCheckHandle.Complete();
 
-            base.PreRender();
+            if (finishPreRender)
+                FinishPreRender();
         }
 
         /// <summary>

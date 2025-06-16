@@ -39,9 +39,14 @@ namespace Laio.GPUInstancing.Samples
             _radius = new NativeArray<float>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += sizeof(float) * AvailableInstances;
 
-            FinishAllocation();
+            if (finishAllocation)
+                FinishAllocation();
+        }
+
+        protected override void PostAllocation()
+        {
+            base.PostAllocation();
             Layout();
-            Debug.Log("Allocated");
         }
 
         /// <summary>

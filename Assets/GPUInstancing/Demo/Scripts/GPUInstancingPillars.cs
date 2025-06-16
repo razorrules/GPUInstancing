@@ -25,8 +25,9 @@ namespace Laio.GPUInstancing.Samples
         public float heightScale = 5.0f;
         public float timeScale = 2.0f;
 
-        protected override void PostSetup()
+        protected override void PostAllocation()
         {
+            base.PostAllocation();
             GridLayout();
         }
 
