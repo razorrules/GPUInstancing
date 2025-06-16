@@ -75,6 +75,7 @@ namespace Laio.GPUInstancing.Samples.VegetationPainter
             //Add
             if (Input.GetMouseButton(0))
             {
+                Debug.Log("Adding");
                 //Generate random points based on density in range
                 List<Vector3> generatedPoints = new List<Vector3>();
                 Vector2 random;

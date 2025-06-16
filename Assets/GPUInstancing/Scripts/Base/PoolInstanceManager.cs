@@ -13,11 +13,39 @@ namespace Laio.GPUInstancing
 
     public struct PoolInstanceData
     {
-        public int index;
         public Vector3 position;
         public Quaternion rotation;
         public Vector3 scale;
+
+        public int index;
         public bool doRender;
+
+        public PoolInstanceData(Vector3 position)
+        {
+            index = -1;
+            doRender = true;
+            this.position = position;
+            this.rotation = Quaternion.identity;
+            this.scale = Vector3.one;
+        }
+
+        public PoolInstanceData(Vector3 position, Quaternion rotation)
+        {
+            index = -1;
+            doRender = true;
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = Vector3.one;
+        }
+
+        public PoolInstanceData(Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            index = -1;
+            doRender = true;
+            this.position = position;
+            this.rotation = rotation;
+            this.scale = scale;
+        }
 
         public static int GetSize()
         {
@@ -51,17 +79,11 @@ namespace Laio.GPUInstancing
         [NativeDisableParallelForRestriction]
         protected NativeArray<int> _matrixLength;
 
-        /// <summary> Length of the array for a given LOD </summary>
-        [NativeDisableParallelForRestriction]
-        protected NativeArray<bool> _doRender;
-
         private RenderParams RenderParams;
         private bool _doPrerender;
 
-
         //========== Properties
         public InstanceMesh Mesh { get; protected set; }
-
 
         /// <summary>
         /// Deallocate all of the native arrays.
@@ -71,7 +93,6 @@ namespace Laio.GPUInstancing
             _data.Dispose();
             _matrixData.Dispose();
             _matrixLength.Dispose();
-            _doRender.Dispose();
         }
 
         public override void Setup(int instances)
@@ -114,10 +135,11 @@ namespace Laio.GPUInstancing
             _matrixLength = new NativeArray<int>(1, Allocator.Persistent);
             AllocatedKB += sizeof(int);
 
-            FinishAllocation();
+            if (finishAllocation)
+                FinishAllocation();
         }
 
-        protected override void PreRender(bool stopTimer = true)
+        protected override void PreRender(bool finishPreRender = true)
         {
             base.PreRender(false);
 
@@ -126,7 +148,7 @@ namespace Laio.GPUInstancing
                 UpdateMatrixData();
             }
 
-            if (stopTimer)
+            if (finishPreRender)
                 FinishPreRender();
         }
 
@@ -200,7 +222,7 @@ namespace Laio.GPUInstancing
         }
 
         /// <summary>
-        /// Add new points to the pool
+        /// Add new points to the pool, there is no need to set index on new data
         /// </summary>
         /// <param name="toAdd"></param>
         public void AddPoints(PoolInstanceData[] toAdd)
@@ -313,6 +335,7 @@ namespace Laio.GPUInstancing
                 Debug.Log("Failed to add points to job, ran out of allocated spaces.");
             }
         }
+
         [BurstCompile]
         protected struct RemovePointsJob : IJob
         {

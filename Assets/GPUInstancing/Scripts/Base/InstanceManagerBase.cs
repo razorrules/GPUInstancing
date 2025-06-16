@@ -12,6 +12,20 @@ namespace Laio.GPUInstancing
     /// Base class for all instance managers. This is simply a template of methods that also contains
     /// the most basic data and references. Such as Camera and number of instances. 
     /// Performance is tracked here and is wrapped in UNITY_EDITOR
+    /// 
+    /// Flow:
+    /// 
+    /// Awake
+    ///     • Construct in awake
+    ///     
+    /// Setup
+    /// Allocate
+    /// 
+    /// Pre-render
+    /// Render
+    /// 
+    /// Deallocate
+    /// 
     /// </summary>
     public abstract class InstanceManagerBase : MonoBehaviour
     {
@@ -24,6 +38,7 @@ namespace Laio.GPUInstancing
         [SerializeField] protected Camera _camera;
         [SerializeField] protected int numInstances = 100;
         [SerializeField] protected bool constructInAwake = false;
+        [SerializeField] protected bool tryFindCamera = false;
 
         //========== Properties
         public int AvailableInstances { get; private set; } = 0;
@@ -94,7 +109,8 @@ namespace Laio.GPUInstancing
         }
 #endif
 
-        //================ Public / protected
+        //================ Public
+
         /// <summary>
         /// Overload to setup that allows you to directly set the camera
         /// </summary>
@@ -104,31 +120,6 @@ namespace Laio.GPUInstancing
         {
             _camera = cam;
             Setup(instances);
-        }
-
-        /// <summary>
-        /// Handle the pre-render. This can be LOD checking, positional changes, etc.
-        /// </summary>
-        /// <param name="stopTimer"></param>
-        protected virtual void PreRender(bool stopTimer = true)
-        {
-#if UNITY_EDITOR
-            _prerenderTimer.Restart();
-#endif
-        }
-
-        /// <summary>
-        /// Manages the stopwatch for tracking performance with pre-render.
-        /// </summary>
-        protected virtual void FinishPreRender()
-        {
-#if UNITY_EDITOR
-            _prerenderTimer.Stop();
-            CpuTimeMilliseconds = _prerenderTimer.ElapsedMilliseconds;
-
-            if (_prerenderTimer.ElapsedMilliseconds > 1)
-                UnityEngine.Debug.Log("Took: " + _prerenderTimer.ElapsedMilliseconds + "ms in prerender.");
-#endif
         }
 
         /// <summary>
@@ -142,20 +133,35 @@ namespace Laio.GPUInstancing
             _prerenderTimer = new Stopwatch();
 #endif
             //If there is no camera, then let us try and find one.
-            if (_camera == null)
+            if (tryFindCamera && _camera == null)
                 TryGetCamera();
         }
 
+        //================ Protected
+
         /// <summary>
-        /// If there is no camera assigned, then lets just try and get the main camera
+        /// Handle the pre-render. This can be LOD checking, positional changes, etc.
         /// </summary>
-        private void TryGetCamera()
+        /// <param name="finishPreRender"></param>
+        protected virtual void PreRender(bool finishPreRender = true)
         {
-            _camera = Camera.main;
-            if (_camera == null)
-                UnityEngine.Debug.LogError("No camera set for InstanceSpawningManager and no camera found in scene to default to. Ensure a camera is setup.");
-            else
-                UnityEngine.Debug.LogWarning("No camera set for InstancingSpawningManager. Using Camera.main");
+#if UNITY_EDITOR
+            _prerenderTimer.Restart();
+#endif
+        }
+
+        /// <summary>
+        /// Manages the stopwatch for tracking performance with pre-render.
+        /// </summary>
+        protected void FinishPreRender()
+        {
+#if UNITY_EDITOR
+            _prerenderTimer.Stop();
+            CpuTimeMilliseconds = _prerenderTimer.ElapsedMilliseconds;
+
+            if (_prerenderTimer.ElapsedMilliseconds > 1)
+                UnityEngine.Debug.Log("Took: " + _prerenderTimer.ElapsedMilliseconds + "ms in prerender.");
+#endif
         }
 
         /// <summary>
@@ -182,6 +188,29 @@ namespace Laio.GPUInstancing
             AllocatedKB /= 1024;
             IsSetup = true;
             UnityEngine.Debug.Log($"<color=cyan>Setup InstanceSpawningManager with {AvailableInstances} instances available. Allocating {(AllocatedKB).ToString("N0")}KB </color>");
+            PostAllocation();
+        }
+
+        /// <summary>
+        /// Everything is fully setup and operational. 
+        /// </summary>
+        protected virtual void PostAllocation()
+        {
+
+        }
+
+        //================ Private
+
+        /// <summary>
+        /// If there is no camera assigned, then lets just try and get the main camera
+        /// </summary>
+        private void TryGetCamera()
+        {
+            _camera = Camera.main;
+            if (_camera == null)
+                UnityEngine.Debug.LogError("No camera set for InstanceSpawningManager and no camera found in scene to default to. Ensure a camera is setup.");
+            else
+                UnityEngine.Debug.LogWarning("No camera set for InstancingSpawningManager. Using Camera.main");
         }
 
     }

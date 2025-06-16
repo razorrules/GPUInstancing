@@ -156,6 +156,7 @@ MonoBehaviour:
   _camera: {fileID: 0}
   numInstances: 100000
   constructInAwake: 1
+  tryFindCamera: 0
   _meshSet: {fileID: 11400000, guid: e4af89281b032a243b757e58fef69704, type: 2}
 --- !u!4 &70945222
 Transform:
@@ -1096,6 +1097,7 @@ MonoBehaviour:
   _camera: {fileID: 0}
   numInstances: 100000
   constructInAwake: 1
+  tryFindCamera: 0
   _meshSet: {fileID: 11400000, guid: 47c5550121cde8242ae577ef9de7b5da, type: 2}
 --- !u!4 &788611257
 Transform:
@@ -1358,6 +1360,7 @@ MonoBehaviour:
   _camera: {fileID: 0}
   numInstances: 100000
   constructInAwake: 1
+  tryFindCamera: 0
   _meshSet: {fileID: 11400000, guid: bba5193f91d376b4988002d549628e07, type: 2}
 --- !u!114 &1073263894
 MonoBehaviour:

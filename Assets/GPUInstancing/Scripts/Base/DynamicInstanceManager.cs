@@ -80,11 +80,9 @@ namespace Laio.GPUInstancing
             _positions = new NativeArray<float3>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += float3Size * AvailableInstances;
 
-            //Ensure all of the native arrays are setup
             _rotations = new NativeArray<Quaternion>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += (floatSize * 4) * AvailableInstances;
 
-            //Ensure all of the native arrays are setup
             _scale = new NativeArray<float3>(AvailableInstances, Allocator.Persistent);
             AllocatedKB += float3Size * AvailableInstances;
 
@@ -94,20 +92,13 @@ namespace Laio.GPUInstancing
 
             if (finishAllocation)
                 FinishAllocation();
-
-            PostSetup();
         }
-
-        /// <summary>
-        /// Called after Setup and after everything has been allocated.
-        /// </summary>
-        protected virtual void PostSetup() { }
 
         /// <summary>
         /// Handles pre-rendering. All we need to do is update matrix data.
         /// </summary>
-        /// <param name="stopTimer"></param>
-        protected override void PreRender(bool stopTimer = true)
+        /// <param name="finishPreRender"></param>
+        protected override void PreRender(bool finishPreRender = true)
         {
             //Ensure to call base as that manages the timer
             base.PreRender(false);
@@ -124,7 +115,7 @@ namespace Laio.GPUInstancing
             updateMatrixHandle.Complete();
 
             //Once we are finished, call finish pre-render so we can track CPU impact
-            if (stopTimer)
+            if (finishPreRender)
                 FinishPreRender();
         }
 
@@ -137,6 +128,28 @@ namespace Laio.GPUInstancing
                 Mesh.mesh,
                 Mesh.submeshIndex,
                 _matrixData);
+        }
+
+        public void SetData(int index, float3 position, quaternion rotation, float3 scale)
+        {
+            _positions[index] = position;
+            _rotations[index] = rotation;
+            _scale[index] = scale;
+        }
+
+        public void SetPosition(int index, float3 position)
+        {
+            _positions[index] = position;
+        }
+
+        public void SetRotation(int index, Quaternion rotation)
+        {
+            _rotations[index] = rotation;
+        }
+
+        public void SetScale(int index, float3 scale)
+        {
+            _scale[index] = scale;
         }
 
         /// <summary>

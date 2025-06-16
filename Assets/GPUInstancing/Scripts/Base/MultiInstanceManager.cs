@@ -40,7 +40,7 @@ namespace Laio.GPUInstancing
 
         /// <summary> Length of the array for a given LOD </summary>
         [NativeDisableParallelForRestriction]
-        protected NativeArray<int> _matrixLength;
+        protected NativeArray<int> _meshGroupLength;
 
         protected RenderParams[] RenderParams;
 
@@ -58,7 +58,7 @@ namespace Laio.GPUInstancing
             _scale.Dispose();
             _meshGroup.Dispose();
             _matrixData.Dispose();
-            _matrixLength.Dispose();
+            _meshGroupLength.Dispose();
         }
 
         public override void Setup(int instances)
@@ -114,26 +114,21 @@ namespace Laio.GPUInstancing
             AllocatedKB += (matrixSize * AvailableInstances) * MeshesCount;
 
             //Allocate matrix length
-            _matrixLength = new NativeArray<int>(MeshesCount, Allocator.Persistent);
+            _meshGroupLength = new NativeArray<int>(MeshesCount, Allocator.Persistent);
             AllocatedKB += sizeof(int) * MeshesCount;
 
             if (finishAllocation)
                 FinishAllocation();
         }
 
-        /// <summary>
-        /// Called after Setup and after everything has been allocated.
-        /// </summary>
-        protected virtual void PostSetup() { }
-
-        protected override void PreRender(bool stopTimer = true)
+        protected override void PreRender(bool finishPreRender = true)
         {
-            base.PreRender(stopTimer);
+            base.PreRender(finishPreRender);
 
             UpdateMatrixJob updateMatrix = new UpdateMatrixJob()
             {
                 meshGroup = _meshGroup,
-                matrixLengths = _matrixLength,
+                meshGroupsLength = _meshGroupLength,
                 matrixData = _matrixData,
                 positions = _positions,
                 rotations = _rotations,
@@ -143,7 +138,7 @@ namespace Laio.GPUInstancing
             JobHandle updateMatrixHandle = updateMatrix.Schedule();
             updateMatrixHandle.Complete();
 
-            if (stopTimer)
+            if (finishPreRender)
                 FinishPreRender();
         }
 
@@ -151,13 +146,13 @@ namespace Laio.GPUInstancing
         {
             for (int i = 0; i < MeshesCount; i++)
             {
-                if (_matrixLength[i] == 0)
+                if (_meshGroupLength[i] == 0)
                     continue;
 
                 Graphics.RenderMeshInstanced(RenderParams[i],
                     Meshes[i].mesh,
                     Meshes[i].submeshIndex,
-                    _matrixData.GetSubArray(i * AvailableInstances, _matrixLength[i])
+                    _matrixData.GetSubArray(i * AvailableInstances, _meshGroupLength[i])
                     );
             }
         }
@@ -165,29 +160,30 @@ namespace Laio.GPUInstancing
         [BurstCompile]
         protected struct UpdateMatrixJob : IJob
         {
-            public NativeArray<byte> meshGroup;
-
-            public NativeArray<int> matrixLengths;
+            public NativeArray<int> meshGroupsLength;
             public NativeArray<Matrix4x4> matrixData;
 
-            public NativeArray<float3> positions;
-            public NativeArray<Quaternion> rotations;
-            public NativeArray<float3> scales;
+            [ReadOnly] public NativeArray<byte> meshGroup;
 
-            public Matrix4x4 tmp;
-            public Vector4 pos;
+            [ReadOnly] public NativeArray<float3> positions;
+            [ReadOnly] public NativeArray<Quaternion> rotations;
+            [ReadOnly] public NativeArray<float3> scales;
 
             [BurstCompile]
             public void Execute()
             {
-                for (int i = 0; i < matrixLengths.Length; i++)
-                    matrixLengths[i] = 0;
+                //Reset all lengths to 0
+                for (int i = 0; i < meshGroupsLength.Length; i++)
+                    meshGroupsLength[i] = 0;
 
+                //Loop through all positions
                 for (int i = 0; i < positions.Length; i++)
                 {
-                    matrixData[positions.Length * meshGroup[i] + matrixLengths[meshGroup[i]]] = Matrix4x4.TRS(positions[i], rotations[i], scales[i]);
+                    //Update position data. Multiply the total positions by meshGroup to get the correct offset, then use the meshGroupsLength to set the next element in the sequence.
+                    matrixData[positions.Length * meshGroup[i] + meshGroupsLength[meshGroup[i]]] = Matrix4x4.TRS(positions[i], rotations[i], scales[i]);
 
-                    matrixLengths[meshGroup[i]]++;
+                    //Increment the length of meshGroups
+                    meshGroupsLength[meshGroup[i]]++;
                 }
             }
         }

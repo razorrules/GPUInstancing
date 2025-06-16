@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -31,25 +28,24 @@ namespace Laio.GPUInstancing.Samples
         public Vector3 startScale;
 
         //Manage a seed for math.random
-        private int baseSeed;
+        private uint baseSeed;
 
-        public void Update()
+        protected override void Update()
         {
             base.Update();
 
-            //Increment the seed, if we are greater then a certain number, reset as we don't want to
-            //cause an overflow
+            if (!IsSetup)
+                return;
+
             baseSeed++;
-            if (baseSeed > uint.MaxValue / 2)
+
+            if (baseSeed >= uint.MaxValue - (AvailableInstances * 10))
                 baseSeed = 1;
         }
 
-        /// <summary>
-        /// Set base seed and call layout
-        /// </summary>
-        protected override void Allocate(bool finishAllocation = true)
+        protected override void PostAllocation()
         {
-            base.Allocate(true);
+            base.PostAllocation();
             baseSeed = 1;
             Layout();
         }
@@ -63,11 +59,11 @@ namespace Laio.GPUInstancing.Samples
 
             for (int i = 0; i < AvailableInstances; i++)
             {
-                _positions[i] = new float3(r.Next(-areaSize, areaSize), r.Next(0, startY), r.Next(-areaSize, areaSize));
-                _rotations[i] = Quaternion.Euler(new Vector3(r.Next(0, 360), r.Next(0, 360), r.Next(0, 360)));
-                _scale[i] = startScale;
+                SetData(i,
+                /*Position*/new float3(r.Next(-areaSize, areaSize), r.Next(0, startY), r.Next(-areaSize, areaSize)),
+                /*Rotation*/Quaternion.Euler(new Vector3(r.Next(0, 360), r.Next(0, 360), r.Next(0, 360))),
+                /*  Scale */startScale);
             }
-
         }
 
         /// <summary>
@@ -76,12 +72,10 @@ namespace Laio.GPUInstancing.Samples
         /// <param name="stopTimer"></param>
         protected override void PreRender(bool stopTimer = true)
         {
-            base.PreRender(false);
-
             //If movement is paused, ignore job
             if (!pauseMovement)
             {
-
+                Debug.Log("Prerender");
                 //Make the snow fall
                 SnowFlakeFall snowFlakeFall = new SnowFlakeFall()
                 {
@@ -93,20 +87,22 @@ namespace Laio.GPUInstancing.Samples
                 JobHandle snowflakeHandle = snowFlakeFall.Schedule(_positions.Length, 1);
                 snowflakeHandle.Complete();
 
+                //See of the snow needs to be reset, as it went through the ground
+                ResetCheck resetCheck = new ResetCheck()
+                {
+                    positions = _positions,
+                    rotations = _rotations,
+                    startY = startY,
+                    areaSize = areaSize,
+                    baseSeed = baseSeed,
+                };
+
+                JobHandle resetCheckHandle = resetCheck.Schedule(_positions.Length, 1);
+                resetCheckHandle.Complete();
+
+                base.PreRender(false);
+
             }
-
-            //See of the snow needs to be reset, as it went through the ground
-            ResetCheck resetCheck = new ResetCheck()
-            {
-                positions = _positions,
-                rotations = _rotations,
-                startY = startY,
-                areaSize = areaSize,
-                baseSeed = baseSeed,
-            };
-
-            JobHandle resetCheckHandle = resetCheck.Schedule(_positions.Length, 1);
-            resetCheckHandle.Complete();
 
             //Ensure that we stop the pre-render timer so we can track performance
             if (stopTimer)
@@ -124,7 +120,7 @@ namespace Laio.GPUInstancing.Samples
 
             [ReadOnly] public float areaSize;
             [ReadOnly] public float startY;
-            [ReadOnly] public int baseSeed;
+            [ReadOnly] public uint baseSeed;
             public void Execute(int index)
             {
                 Unity.Mathematics.Random random = new Unity.Mathematics.Random((uint)(baseSeed + (index * 10)));

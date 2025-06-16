@@ -75,8 +75,10 @@ namespace Laio.GPUInstancing
                 FinishAllocation();
         }
 
-        protected override void PreRender(bool stopTimer = true)
+        protected override void PreRender(bool finishPreRender = true)
         {
+            base.PreRender(false);
+
             //Calculate the LOD groups and what different points should use
             CalculateLODGroups lodCheck = new CalculateLODGroups()
             {
@@ -90,7 +92,8 @@ namespace Laio.GPUInstancing
             JobHandle lodCheckHandle = lodCheck.Schedule(_positions.Length, 1);
             lodCheckHandle.Complete();
 
-            base.PreRender();
+            if (finishPreRender)
+                FinishPreRender();
         }
 
         /// <summary>

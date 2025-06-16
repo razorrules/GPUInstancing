@@ -71,14 +71,10 @@ namespace Laio.GPUInstancing.Samples.VegetationPainter
             for (int i = 0; i < changes.Length; i++)
             {
                 //Set basic data and the position
-                changes[i] = new PoolInstanceData
-                {
-                    doRender = true,
-                    position = point[i],
-                    rotation = Quaternion.Euler(-90, UnityEngine.Random.Range(0, 360), 0),
-                    scale = defaultSize + (Vector3.one * UnityEngine.Random.Range(0, sizeVariation)),
-                    index = -1
-                };
+                changes[i] = new PoolInstanceData(
+                    point[i],
+                    Quaternion.Euler(-90, UnityEngine.Random.Range(0, 360), 0),
+                    defaultSize + (Vector3.one * UnityEngine.Random.Range(0, sizeVariation)));
             }
 
             //Add points and copy array back over to ensure we are up to date
