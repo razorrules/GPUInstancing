@@ -5,7 +5,26 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/GPUInstancing/Demo/Scenes/GPU Scene Selection.unity
+    guid: ecb150fbfcba31840a2452ca664f35a1
+  - enabled: 1
+    path: Assets/GPUInstancing/Demo/Scenes/Snow.unity
+    guid: 1530a1173d97544459e2d29a9bdc29dc
+  - enabled: 1
+    path: Assets/GPUInstancing/Demo/Scenes/InteractivePillars.unity
+    guid: fd1d98235d78f154395f68a8fc7dfa93
+  - enabled: 1
+    path: Assets/GPUInstancing/Demo/Scenes/PerlinNoise.unity
+    guid: 9ec3ed1a68ad6f84da18cf42228b0e1a
+  - enabled: 1
+    path: Assets/GPUInstancing/Demo/Scenes/VegetationPainter.unity
+    guid: cf9e51eb81cb09743af64d30d5ad0ff5
+  - enabled: 1
+    path: Assets/GPUInstancing/Demo/Scenes/RotatingShapes.unity
+    guid: 642de9e991cbbbb4981069c841e043b2
+  - enabled: 1
+    path: Assets/GPUInstancing/Demo/Scenes/LOD.unity
+    guid: ab0ccab7dc7cc124dba18acd2848db7f
   m_configObjects: {}
+  m_UseUCBPForAssetBundles: 0
