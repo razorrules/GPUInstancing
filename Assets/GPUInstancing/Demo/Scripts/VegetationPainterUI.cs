@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,12 +14,16 @@ namespace Laio.GPUInstancing.Samples.VegetationPainter
     {
 
         [Header("Sliders")]
-        public Slider _bushSize;
-        public Slider _density;
+        [SerializeField] private Slider _brushSize;
+        [SerializeField] private Slider _density;
+
+        [SerializeField] private TextMeshProUGUI _brushSizeText;
+        [SerializeField] private TextMeshProUGUI _densityText;
+
         [Header("Buttons")]
-        public Button treeButton;
-        public Button brushButton;
-        public Button grassButton;
+        [SerializeField] private Button treeButton;
+        [SerializeField] private Button brushButton;
+        [SerializeField] private Button grassButton;
 
         private Brush _brush;
 
@@ -33,14 +38,43 @@ namespace Laio.GPUInstancing.Samples.VegetationPainter
                 gameObject.SetActive(false);
             }
 
+            _brushSize.onValueChanged.AddListener((x) => { UpdateSize(x); _brushSizeText.text = x.ToString("N1"); });
+            _density.onValueChanged.AddListener((x) => { UpdateDensity(x); _densityText.text = x.ToString("N1"); });
+
             //Default the values on sliders to what is currently being used
-            _bushSize.value = _brush.brushSize;
+            _brushSize.value = _brush.brushSize;
             _density.value = _brush.density;
 
             //Add listeners for all the buttons
-            treeButton.onClick.AddListener(() => _brush.SetBrushType(Brush.BrushType.Tree));
-            brushButton.onClick.AddListener(() => _brush.SetBrushType(Brush.BrushType.Brush));
-            grassButton.onClick.AddListener(() => _brush.SetBrushType(Brush.BrushType.Grass));
+            treeButton.onClick.AddListener(() => SelectBrush(Brush.BrushType.Tree));
+            brushButton.onClick.AddListener(() => SelectBrush(Brush.BrushType.Brush));
+            grassButton.onClick.AddListener(() => SelectBrush(Brush.BrushType.Grass));
+
+            SelectBrush(Brush.BrushType.Tree);
+        }
+
+        public void SelectBrush(Brush.BrushType brushType)
+        {
+            _brush.SetBrushType(brushType);
+
+            treeButton.targetGraphic.color = Color.white;
+            brushButton.targetGraphic.color = Color.white;
+            grassButton.targetGraphic.color = Color.white;
+
+            Color selectedColor = new Color(.6f, 1.0f, .6f);
+
+            switch (brushType)
+            {
+                case Brush.BrushType.Tree:
+                    treeButton.targetGraphic.color = selectedColor;
+                    break;
+                case Brush.BrushType.Brush:
+                    brushButton.targetGraphic.color = selectedColor;
+                    break;
+                case Brush.BrushType.Grass:
+                    grassButton.targetGraphic.color = selectedColor;
+                    break;
+            }
         }
 
         /// <summary>

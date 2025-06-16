@@ -67,6 +67,13 @@ namespace Laio.GPUInstancing
 
             Meshes = _meshSet.Meshes;
 
+            CreateRenderParams();
+
+            Allocate();
+        }
+
+        private void CreateRenderParams()
+        {
             //Setup the render params array
             RenderParams = new RenderParams[MeshesCount];
 
@@ -80,7 +87,12 @@ namespace Laio.GPUInstancing
                 RenderParams[i].camera = _camera;
             }
 
-            Allocate();
+        }
+
+        public override void SetCamera(Camera camera)
+        {
+            base.SetCamera(camera);
+            CreateRenderParams();
         }
 
         protected override void Allocate(bool finishAllocation = true)

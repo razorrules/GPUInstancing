@@ -137,6 +137,15 @@ namespace Laio.GPUInstancing
                 TryGetCamera();
         }
 
+        /// <summary>
+        /// Update the target camera
+        /// </summary>
+        /// <param name="camera"></param>
+        public virtual void SetCamera(Camera camera)
+        {
+            this._camera = camera;
+        }
+
         //================ Protected
 
         /// <summary>

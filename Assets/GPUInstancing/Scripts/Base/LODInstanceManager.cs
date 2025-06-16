@@ -35,6 +35,16 @@ namespace Laio.GPUInstancing
             _renderDistanceArray.Dispose();
         }
 
+        public int GetLODCount() { return _renderDistanceArray.Length + 1; }
+        public void SetLODDistance(int index, float distance)
+        {
+            _renderDistanceArray[index] = distance;
+        }
+        public float GetLODDistance(int index)
+        {
+            return _renderDistanceArray[index];
+        }
+
         /// <summary>
         /// Update render distance constantly, that way you are not forced to restart. 
         /// While also ensuring that the length of the render distance array is the 

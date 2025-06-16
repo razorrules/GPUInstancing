@@ -19,8 +19,8 @@ public class CameraToggle : MonoBehaviour
         _rotateCamera.gameObject.SetActive(false);
         _isFreeCam = true;
 
-        _gpuInstancing = FindObjectsOfType<InstanceManagerBase>();
-
+        _gpuInstancing = GameObject.FindObjectsByType<InstanceManagerBase>(FindObjectsSortMode.None);
+        Debug.Log("Found: " + _gpuInstancing.Length);
     }
 
     // Update is called once per frame
@@ -32,12 +32,17 @@ public class CameraToggle : MonoBehaviour
             {
                 _freefloatCamera.gameObject.SetActive(false);
                 _rotateCamera.gameObject.SetActive(true);
+                foreach (var instancer in _gpuInstancing)
+                    instancer.SetCamera(_rotateCamera);
             }
             else
             {
                 _freefloatCamera.gameObject.SetActive(true);
                 _rotateCamera.gameObject.SetActive(false);
+                foreach (var instancer in _gpuInstancing)
+                    instancer.SetCamera(_freefloatCamera);
             }
+
             _isFreeCam = !_isFreeCam;
         }
     }

@@ -54,16 +54,28 @@ namespace Laio.GPUInstancing
             //Set the mesh then we need to validate everything
             Mesh = _meshSet.Meshes[0];
 
-            //Setup after validation (Checks if material is valid)
+            CreateRenderParams();
+
+            //Flag that it is setup and allocate
+            IsSetup = true;
+            Allocate();
+        }
+
+        private void CreateRenderParams()
+        {
+            //Setup the render params array
             RenderParams = new RenderParams(Mesh.material);
             RenderParams.layer = Mesh.layer;
             RenderParams.shadowCastingMode = Mesh.shadowCastingMode;
             RenderParams.receiveShadows = Mesh.receiveShadows;
             RenderParams.camera = _camera;
 
-            //Flag that it is setup and allocate
-            IsSetup = true;
-            Allocate();
+        }
+
+        public override void SetCamera(Camera camera)
+        {
+            base.SetCamera(camera);
+            CreateRenderParams();
         }
 
         /// <summary>
